@@ -1,0 +1,333 @@
+<!-- https://gist.github.com/dermotmcguire/97c4f7ec26411add138c -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        page[size="A4"] {
+            background: white;
+            width: 21cm;
+            height: 29.7cm;
+            display: block;
+            margin: 0 auto 0.5cm;
+            box-shadow: 0 0 0.5cm rgba(0,0,0,1);
+            border: 1.25cm solid transparent;
+        }
+        @media print {
+            body, page[size="A4"] {
+                margin: 0;
+                box-shadow: none;
+            }
+        }
+        body{
+            background: rgb(204,204,204);
+            font-size: 12pt;
+            font-family: "Times New Roman", Times, serif;
+	    color: black;
+        }
+        /* For continued count */
+        ol {
+            counter-reset: item
+        }
+        li {
+            display: block
+        }
+        li:before {
+            content: counters(item, ".") ". ";
+            counter-increment: item
+        }
+        /* page struct */
+	.page_content_wrapper{
+		height: 27.2cm;
+		width: 100%;
+		margin: auto;
+		display: grid;
+	}
+	.page_content_wrapper#fourth_page_content{
+		grid-template-rows: 5% 5% auto;
+	}
+        .titlepage{
+		margin: auto;
+		align-self: center;
+		text-align: center;
+        }
+        .titlepage .title{
+            font-weight: bolder;
+        }
+	.titlepage#titlepage_a{
+		align-self: auto;
+	}
+	.titlepage#titlepage_b{
+		align-self: auto;
+	}
+        .header{
+		margin: auto;
+		width: 100%;
+		height: 1.25cm;
+		position: inherit;
+		top: 0;
+        }
+        .header .text{
+            font-size: 10px;
+            display: inline;
+            margin-left: 6%;
+        }
+        .footer{
+		margin: auto;
+		width: 100%;
+		height: 1.25cm;
+		position: inherit; 
+		bottom: 0;
+		font-weight: bolder;
+        }
+        .footer .text{
+            font-size: 10px;
+            display: inline;
+            margin-left: 6%;
+        }
+        .horizontal_line{
+            margin-left: 5%;
+            margin-right: 5%;
+            height: 1px;
+            color: black;
+            background-color: black;
+            margin-top: 0;
+        }
+        .signature_block{
+            position: page;
+        }
+        .signature_block#a{
+            margin-left: 60%;
+            text-align: right;
+            border: 1px gray solid;
+        }
+        .signature_block#a p{
+            margin: 15px;
+        }
+        .signature_block.b{
+            display: table;
+	    margin: auto;
+
+        }
+        .signature_block.b .signature_block_table_a{
+            float: left;
+	    text-align: left;
+	    margin: 100px;
+        }
+        .signature_block.b .signature_block_table_b{
+            float: right;
+	    text-align: right;
+	    margin: 100px;
+        }
+	#table_of_changes{
+		display: table;
+		table-layout: fixed;
+		width: 100%;
+		border-collapse: collapse;
+		margin: auto;
+	}
+	#table_of_changes tr{
+		border: 1px black solid;
+	}
+	#table_of_changes th{
+		border: 1px black solid;
+	}
+	#table_of_changes td{
+		border: 1px black solid;
+	}
+    .page_content_wrapper#toc_page{
+            grid-template-rows: 5% auto;
+        }
+    .page_content_wrapper#intro_page{
+        grid-template-rows: 5% auto 5% auto auto 5% auto;
+    }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Programmatūras Prasību Specifikācija - Project Two</title>
+</head>
+<body>
+<page size="A4">
+<div class="page_content_wrapper">
+    <div class="titlepage">
+        <br>
+	<h3 class="title">LLU lietotnes izstrāde uz Android un IOS</h3>
+        <br>
+        <h1 class="title">Programmatūras Prasību Specifikācija</h1>
+        <br>
+        <h2 class="title">Project Four</h2>
+        <br>
+        <h5 class="title">proj.PPS.project_four.0000.2021</h5>
+        <br>
+    </div>
+</div>
+    <div class="footer">
+        <h6 style="margin-left:50%;">2021</h6>
+    </div>
+</page>
+<page size="A4">
+    <div class="header">
+        <p class="text">Programmatūras prasību specifikācija</p>
+        <hr class="horizontal_line">
+    </div>
+    <div class="page_content_wrapper">
+        <div id="a" class="signature_block">
+            <p style="text-align: right">Apstiprinu</p>
+            <p>_____________ Niks Šķērsts</p>
+            <p>2021. gada _______________</p>
+        </div>
+	<div id="titlepage_a" class="titlepage">
+            <br>
+            <h3 class="title">LLU lietotnes izstrāde uz Android un IOS</h3>
+            <br>
+            <h1 class="title">Programmatūras Prasību Specifikācija</h1>
+            <br>
+            <h2 class="title">Project Four</h2>
+            <br>
+            <h5 class="title">proj.PPS.project_four.0000.2021</h5>
+        </div>
+        <div class="signature_block b">
+            <div class="signature_block_table_a" style="align-self: flex-start;">
+                <p style="font-weight: bolder">Atbildīgais pasūtītājs:</p>
+                <br>
+                <p style="float: right">_______________ N.Šķērsts</p>
+                <br>
+                <br>
+                <br>
+                <p style="align-self: center"> 2021.gada _______________</p>
+            </div>
+            <div class="signature_block_table_b">
+                <p style="font-weight: bolder">Atbildīgais izstrādātājs:</p>
+                <br>
+                <p style="float: right">_______________ N.Šķērsts</p>
+                <br>
+                <br>
+                <br>
+                <p style="align-self: center"> 2021.gada _______________</p>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <hr class="horizontal_line">
+        <p class="text">proj.PPS.project_four.0000.2021</p>
+    </div>
+</page>
+<page size="A4">
+    <div class="header">
+        <p class="text">Programmatūras prasību specifikācija</p>
+        <hr class="horizontal_line">
+    </div>
+    <div class="page_content_wrapper">
+	    <div id="titlepage_b" class="titlepage">
+            <br>
+            <h3 class="title">LLU lietotnes izstrāde uz Android un IOS</h3>
+            <br>
+            <h1 class="title">Programmatūras Prasību Specifikācija</h1>
+            <br>
+            <h2 class="title">Project Four</h2>
+            <br>
+            <h5 class="title">proj.PPS.project_four.0000.2021</h5>
+        </div>
+    <div class="signature_block b">
+	    <div class="signature_block_table_a">
+		    <p>Izstrādāja:</p>
+		    <p>Kvalitātes pārvaldnieks:</p>
+	    </div>
+	    <div class="signature_block_table_b">
+		    <p>Niks Šķērsts</p>
+		    <p>Niks Šķērsts</p>
+	    </div>
+    </div>
+    </div>
+    <div class="footer">
+        <hr class="horizontal_line">
+        <p class="text">proj.PPS.project_four.0000.2021</p>
+    </div>
+</page>
+<page size="A4">
+    <div class="header">
+        <p class="text">Programmatūras prasību specifikācija</p>
+        <hr class="horizontal_line">
+    </div>
+<div id="fourth_page_content" class="page_content_wrapper">
+	<h2 style="text-transform: uppercase; text-align: center;height: 5%;">Izmaiņu tabula</h2>
+<p style="margin-left: 15px;">Iepriekšējais dokuments: Nav!</p>
+<div>
+<table id="table_of_changes">
+	<tr>	
+		<th>Nr.</th>
+		<th>Izmaiņu apraksts</th>
+		<th>Vieta iepriekšējā dokumentā</th>
+		<th>Izmaiņu pamatojums</th>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td></td>
+		<td></td>
+	</tr>
+	<tr></tr>
+	<tr></tr>
+	<tr></tr>
+	<tr></tr>
+</table>
+</div>
+</div>
+<div class="footer">
+       <hr class="horizontal_line">
+        <p class="text">proj.PPS.project_four.0000.2021</p>
+    </div>
+</page>
+<page size="A4">
+    <div class="header">
+        <p class="text">proj.PPS.project_four.0000.2021</p>
+        <hr class="horizontal_line"></div>
+    <div id="toc_page" class="page_content_wrapper">
+        <h2 style="text-transform: uppercase; text-align: center;height: 5%;">Saturs</h2>
+        <ol id="table_of_contents">
+            <li>
+                Ievads
+                <ol>
+                    <li>Nolūks</li>
+                    <li>Darbības sfēra</li>
+                    <li>Dokumenta raksturojums</li>
+                    <li>Saistība ar citiem dokumentiem</li>
+                    <li>Definīcijas, akronīmi un saīsinājumi.</li>
+                </ol>
+            </li>
+            <li></li>
+            <li></li>
+            <li></li>
+        </ol>
+    </div>
+    <div class="footer">
+        <hr class="horizontal_line">
+        <p class="text">proj.PPS.project_four.0000.2021</p>
+    </div>
+</page>
+<page size="A4">
+    <div class="header">
+        <p class="text">proj.PPS.project_four.0000.2021</p>
+        <hr class="horizontal_line">
+    </div>
+    <div id="intro_page" class="page_content_wrapper">
+        <h1>1. Ievads</h1>
+        <ol>
+            Dokuments ir saistošs:
+            <li>no gala lietotāja puses projektā iesaistītajām personām,</li>
+            <li>lietotnes projektētājiem,testētajiem un izstrādātājiem,</li>
+            <li>kā arī informatīvs materiāls citiem projektā iesaistītajiem dalībniekiem un projekta vadītājiem.</li>
+        </ol>
+        <h2>&nbsp;&nbsp;&nbsp;&nbsp;1.1. Nolūks</h2>
+        <p>Dokuments apraksta detalizētas sistēmas prasības un lietojumus, kurus jāatbalsta gala lietotnei.</p>
+        <p>PPS dokuments būs uzskatāms par pabeigtu, kad Pasūtītāja un Izpildītāja puses piekritīs tā saturam, pieņems to un attiecīgi parakstīs to pēc abpusējas saskaņošanas.</p>
+        <h2>&nbsp;&nbsp;&nbsp;&nbsp;1.1. Darbības sfēra</h2>
+        <p>tetststas</p>
+    </div>
+    <div class="footer">
+
+    </div>
+</page>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
