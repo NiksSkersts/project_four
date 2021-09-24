@@ -1,13 +1,17 @@
 package lv.llu_app.llu.Tasks;
 
-import lv.llu_app.llu.Async.CustomCallable;
+import android.os.Handler;
+import android.os.Looper;
 
-public class BaseTask<R> implements CustomCallable<R> {
-    @Override
-    public void setDataAfterLoading(R result) {
-    }
-    @Override
-    public R call() throws Exception {
-        return null;
-    }
+import java.io.IOException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+import javax.mail.MessagingException;
+
+public interface BaseTask {
+    Handler handler = new Handler(Looper.getMainLooper());
+    Executor executor = Executors.newCachedThreadPool();
+    Object call() throws IOException, MessagingException;
+    void setDataAfterLoading(Object result);
 }

@@ -1,55 +1,39 @@
 package lv.llu_app.llu.Tasks;
 
-import java.util.Properties;
+import java.io.IOException;
 
-import javax.mail.Folder;
-import javax.mail.Session;
-import javax.mail.Store;
+import javax.mail.MessagingException;
 
+import lv.llu_app.llu.Email.Email;
+import lv.llu_app.llu.Email.EmailTab;
+import lv.llu_app.llu.Main.MainActivity;
 import lv.llu_app.llu.Model.User;
 
-public class LoginTask extends BaseTask {
-    Properties properties = null;
-    private Session session = null;
-    private Store store = null;
-    private Folder inbox = null;
-    protected String username = "";
-    protected String password = "";
+public class LoginTask implements BaseTask {
+    protected String username;
+    protected String password;
+    public boolean post;
 
     public LoginTask(String username, String password) {
         this.username = username;
         this.password = password;
+        executor.execute(() -> {
+            try {
+                Object result = call();
+                post = handler.post(() -> setDataAfterLoading(result));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
-
     @Override
     public void setDataAfterLoading(Object result) {
-
+        EmailTab.email_account = (Email) result;
     }
-
     @Override
-    public Object call() throws Exception {
-
-        Object result = null;
-        result = TryLogin();//some network request for example
+    public Object call() throws MessagingException {
+        Email result = new Email();
+        result.User(username,password);
         return result;
-    }
-
-    public Object TryLogin() {
-        properties = new Properties();
-        properties.setProperty("mail.imap.ssl.enable", "true");
-        Session session = Session.getInstance(properties);
-        try {
-            store = session.getStore("imap");
-            store.connect("", username, password);
-            if (!store.isConnected())
-                return null;
-            inbox = store.getFolder("INBOX");
-            inbox.open(Folder.READ_ONLY);
-            store.close();
-            return new User(username, password);
-
-        } catch (Exception e) {
-            return null;
-        }
     }
 }
