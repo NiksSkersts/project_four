@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">LLU</string>
+    <string name="username">Matrikulas Kods</string>
+    <string name="password">Parole</string>
+    <string name="button_login">Pieslēgties</string>
+    <string name="button_email">Uz e-pastu</string>
+    <string name="title_activity_email">email</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_email_detail_host">EmailDetailHostActivity</string>
+    <string name="title_email_list">Emails</string>
+    <string name="title_email_detail">Email Detail</string>
+</resources>
