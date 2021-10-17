@@ -1,4 +1,4 @@
-namespace LLU.Android.LLU.Models
+namespace LLU.LLU.Models
 {
     public enum EmailProtocol
     {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Android.App;
 using Android.Widget;
 using LLU.Android.Controllers;
+using LLU.LLU.Models;
 using MailKit.Net.Pop3;
 using MimeKit;
 

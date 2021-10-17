@@ -10,7 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Models\EmailProtocol.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\EmailUser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\User.cs" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 using Java.Lang;
 using LLU.Android.LLU.Models;
+using LLU.LLU.Models;
 using MailKit.Net.Imap;
 using MailKit.Net.Pop3;
 
