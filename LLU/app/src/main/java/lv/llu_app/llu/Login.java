@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import lv.llu_app.llu.Tasks.LoginTask;
 
+import java.io.*;
+
 public class Login extends AppCompatActivity {
     public EditText usr_field;
     public EditText pass_field;
@@ -20,15 +22,36 @@ public class Login extends AppCompatActivity {
     }
 
     public void LoginClick(View view) {
-            LoginTask loginTask = new LoginTask(usr_field.getText().toString(), pass_field.getText().toString());
-            while (!loginTask.post && !loginTask.err){
-                //Loading Screen and all
+        //String username = usr_field.getText().toString();
+        //String password = pass_field.getText().toString();
+        String username = "775a6cabd3ec54";
+        String password = "07c19676c13067";
+        LoginTask loginTask = new LoginTask(username,password);
+            while(!loginTask.post){
+                //todo loading screen
             }
             if (!loginTask.err) {
                 login = false;
+                HandleIO(username,password);
                 finish();
-            }else{
-                Toast.makeText(this,"Error logging in, check your creds",Toast.LENGTH_LONG).show();
             }
+    }
+
+    private void HandleIO(String username,String password) {
+        File dir = this.getFilesDir();
+        File file = new File(dir,"login");
+        try {
+            if(!file.createNewFile()) return;
+            FileOutputStream fileOutputStream = openFileOutput("login",MODE_PRIVATE);
+            OutputStreamWriter osw = new OutputStreamWriter(fileOutputStream);
+            osw.write(username);
+            osw.write("\n");
+            osw.write(password);
+            osw.flush();
+            osw.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

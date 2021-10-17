@@ -1,39 +1,48 @@
 package lv.llu_app.llu.Tasks;
 
-import lv.llu_app.llu.Email.Email;
-import lv.llu_app.llu.Email.EmailTab;
+import android.widget.Toast;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import lv.llu_app.llu.Model.EmailUser;
+import lv.llu_app.llu.Model.User;
 
-import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
-import java.io.IOException;
 
-public class LoginTask implements BaseTask {
-    protected String username;
-    protected String password;
-    public boolean post;
-    public boolean err = false;
+public class LoginTask extends Task implements BaseTask {
+    protected final String username;
+    protected final String password;
     public LoginTask(String username, String password){
         this.username = username;
         this.password = password;
         executor.execute(() -> {
             try {
                 Object result = call();
-                post = handler.post(() -> setDataAfterLoading(result));
+                if (result != null) {
+                    post = handler.post(() -> setDataAfterLoading(result));
+                }else{
+                    err = true;
+                }
             } catch (Exception e) {
                 e.printStackTrace();
-                err =true;
+                err = true;
             }
         });
     }
     @Override
-    public Object call() throws IOException, MessagingException {
-        Email result = new Email();
-        result.User(username,password);
-        return result;
+    public Object call(){
+        //User can have multiple password for each service. EG. mans.llu.lv, lais.llu.lv, email and moodle;
+        //Go through each of them and ask for info
+        //todo Focus on email function
+        try {
+            return new EmailUser(username,password);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
     public void setDataAfterLoading(Object result) {
-        EmailTab.email_account = (Email) result;
+        User.email_account = (EmailUser) result;
     }
 }

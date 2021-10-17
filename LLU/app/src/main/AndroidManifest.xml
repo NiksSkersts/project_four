@@ -12,6 +12,8 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/Theme.LLU">
+        <activity android:name=".tab_email">
+        </activity>
         <activity android:name=".Login">
         </activity>
         <activity

@@ -2,6 +2,7 @@ package lv.llu_app.llu.Email;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.os.Looper;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,30 +14,28 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.io.IOException;
-import java.util.Arrays;
+import javax.mail.*;
 
-import javax.mail.Flags;
-import javax.mail.Folder;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-
+import lv.llu_app.llu.Model.EmailUser;
+import lv.llu_app.llu.Model.User;
 import lv.llu_app.llu.R;
+import org.jetbrains.annotations.NotNull;
 
 public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.MyViewHolder> {
     private final Context mContext;
+    private final EmailUser emailUser = User.email_account;
 
-    public class MyViewHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener {
+    public static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener {
         public TextView from, subject, message, timestamp;
         public LinearLayout messageContainer;
 
         public MyViewHolder(View view) {
             super(view);
-            from = (TextView) view.findViewById(R.id.from);
-            subject = (TextView) view.findViewById(R.id.txt_primary);
-            message = (TextView) view.findViewById(R.id.txt_secondary);
-            timestamp = (TextView) view.findViewById(R.id.timestamp);
-            messageContainer = (LinearLayout) view.findViewById(R.id.message_container);
+            from = view.findViewById(R.id.from);
+            subject = view.findViewById(R.id.txt_primary);
+            message = view.findViewById(R.id.txt_secondary);
+            timestamp = view.findViewById(R.id.timestamp);
+            messageContainer = view.findViewById(R.id.message_container);
             view.setOnLongClickListener(this);
         }
 
@@ -60,20 +59,13 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.MyView
     }
 
     @Override
-    public void onBindViewHolder(final MyViewHolder holder, final int position) {
-        Message message = EmailTab.email_account.GetMessages(position);
-        // displaying text view data
+    public void onBindViewHolder(@NotNull final MyViewHolder holder, final int position) {
+        Message message = emailUser.messages.get(position);
         try {
-            holder.from.setText(message.getFrom().toString());
+            holder.from.setText(message.getFrom()[0].toString());
             holder.subject.setText(message.getSubject());
-            holder.message.setText(EmailTab.email_account.Read(message));
+            holder.message.setText(Email.Read(message));
             holder.timestamp.setText(message.getSentDate().toString());
-        } catch (MessagingException | IOException e) {
-            e.printStackTrace();
-        }
-
-        // change the font style depending on message read status
-        try {
             applyReadStatus(holder, message);
         } catch (MessagingException e) {
             e.printStackTrace();
@@ -82,7 +74,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.MyView
 
     @Override
     public long getItemId(int position) {
-        return EmailTab.email_account.GetMessages(position).getMessageNumber();
+        return emailUser.messages.get(position).getMessageNumber();
     }
 
     private void applyReadStatus(MyViewHolder holder, Message message) throws MessagingException {
@@ -101,10 +93,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.MyView
 
     @Override
     public int getItemCount() {
-        return EmailTab.email_account.GetMessages().length;
+        return emailUser.messages.size();
     }
 
     public void removeData(int position) throws MessagingException {
-        EmailTab.email_account.GetMessages(position).setFlag(Flags.Flag.DELETED,true);
+        Message message = emailUser.messages.get(position);
+        message.setFlag(Flags.Flag.DELETED,true);
     }
 }
