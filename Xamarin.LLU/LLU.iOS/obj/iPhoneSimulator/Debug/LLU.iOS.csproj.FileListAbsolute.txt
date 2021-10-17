@@ -1,8 +1,0 @@
-C:\Users\skers\Documents\sources\LLU\LLU.iOS\obj\iPhoneSimulator\Debug\actool\_PartialAppManifest.items
-C:\Users\skers\Documents\sources\LLU\LLU.iOS\obj\iPhoneSimulator\Debug\actool\_BundleResourceWithLogicalName.items
-C:\Users\skers\Documents\sources\LLU\LLU.iOS\obj\iPhoneSimulator\Debug\ibtool\_BundleResourceWithLogicalName.items
-C:\Users\skers\Documents\sources\LLU\LLU.iOS\obj\iPhoneSimulator\Debug\coremlc\_PartialAppManifest.items
-C:\Users\skers\Documents\sources\LLU\LLU.iOS\obj\iPhoneSimulator\Debug\coremlc\_BundleResourceWithLogicalName.items
-C:\Users\skers\Documents\sources\LLU\LLU.iOS\obj\iPhoneSimulator\Debug\optimized\
-C:\Users\skers\Documents\sources\LLU\LLU.iOS\obj\iPhoneSimulator\Debug\LLU.iOS.csprojAssemblyReference.cache
-C:\Users\skers\Documents\sources\LLU\LLU.iOS\obj\iPhoneSimulator\Debug\LLU.iOS.csproj.CoreCompileInputs.cache

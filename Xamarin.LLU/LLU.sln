@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31808.319
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "LLU", "LLU\LLU.shproj", "{CE8127E4-DCEA-440C-9393-ADB536C2D4B8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LLU.Android", "LLU.Android\LLU.Android.csproj", "{9D910DF6-7884-4CA0-B93E-8D4BFB3C2072}"
@@ -7,6 +10,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LLU.iOS", "LLU.iOS\LLU.iOS.csproj", "{73CBD76C-F808-468F-83B5-236A6F3DEBD9}"
 EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		LLU\LLU.projitems*{73cbd76c-f808-468f-83b5-236a6f3debd9}*SharedItemsImports = 4
+		LLU\LLU.projitems*{9d910df6-7884-4ca0-b93e-8d4bfb3c2072}*SharedItemsImports = 4
+		LLU\LLU.projitems*{ce8127e4-dcea-440c-9393-adb536c2d4b8}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|iPhone = Debug|iPhone
@@ -64,5 +72,11 @@ Global
 		{73CBD76C-F808-468F-83B5-236A6F3DEBD9}.Release|iPhoneSimulator.ActiveCfg = Release|iPhoneSimulator
 		{73CBD76C-F808-468F-83B5-236A6F3DEBD9}.Release|iPhoneSimulator.Build.0 = Release|iPhoneSimulator
 		{73CBD76C-F808-468F-83B5-236A6F3DEBD9}.Release|iPhoneSimulator.Deploy.0 = Release|iPhoneSimulator
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C284280D-2E85-4E38-9EBF-CCB9041E6D6A}
 	EndGlobalSection
 EndGlobal
