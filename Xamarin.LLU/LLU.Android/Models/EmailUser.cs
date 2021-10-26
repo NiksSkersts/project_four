@@ -11,18 +11,28 @@ namespace LLU.Android.LLU.Models
 {
     public class EmailUser : User
     {
-        private readonly EmailProtocol _protocol = EmailProtocol.Pop3;
-        private readonly int port = 1100;
-        private readonly string host = "pop3.mailtrap.io";
-        protected List<MimeKit.MimeMessage> _messages = new List<MimeMessage>();
+        private readonly int port = 993;
+        private readonly int SMTP = 587;
+        private readonly string host = "mail.llu.lv";
+        protected List<MimeMessage> _messages = new();
         public EmailUser(string username, string password)
         {
-            if (Email.CheckConnection(host,port,username,password,_protocol))
+            if (Email.CheckConnection(host,port,username,password))
             {
                 this.username = username;
                 this.password = password;
+                GetMessages();
             }
             Toast.MakeText(Application.Context,"Failed to connect!",ToastLength.Long);
+        }
+
+        void GetMessages()
+        {
+            _messages = Email.GetMessages(host,port,username,password);
+        }
+        public List<MimeMessage> ReturnMessages()
+        {
+            return _messages;
         }
     }
 }
