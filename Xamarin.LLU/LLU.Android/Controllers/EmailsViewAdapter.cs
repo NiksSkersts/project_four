@@ -1,34 +1,25 @@
-﻿using Android.App;
-using Android.Content;
-using Android.OS;
-using Android.Runtime;
-using AndroidX.RecyclerView.Widget;
+﻿using AndroidX.RecyclerView.Widget;
 using Android.Views;
-using Android.Widget;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using MimeKit;
+using LLU.Android.LLU.Models;
 
 namespace LLU.Android.Controllers
 {
     internal class EmailsViewAdapter : RecyclerView.Adapter
     {
+        public event EventHandler<int> ItemClick; 
         public List<MimeMessage> _messages;
-        public EmailsViewAdapter(List<MimeMessage> messages)
+        void OnClick (int position)
         {
-            _messages = messages;
+            ItemClick?.Invoke(this, position);
         }
-
-        public override int ItemCount
-        {
-            get { return _messages.Count; }
-        }
-
+        public EmailsViewAdapter(List<MimeMessage> messages) => _messages = messages;
+        public override int ItemCount => _messages.Count;
         public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
         {
-            EmailsViewHolder vh = holder as EmailsViewHolder;
+            EmailsViewHolder vh = holder as EmailsViewHolder ?? throw new InvalidOperationException();
             vh.Subject.Text = _messages[position].Subject;
             vh.From.Text = _messages[position].From.ToString();
             vh.Time.Text = _messages[position].Date.ToString();
@@ -37,7 +28,7 @@ namespace LLU.Android.Controllers
         public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
         {
             View item = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.EmailView, parent, false);
-            EmailsViewHolder vh = new EmailsViewHolder(item);
+            EmailsViewHolder vh = new(item,OnClick);
             return vh;
         }
     }

@@ -1,40 +1,63 @@
-using Java.Lang;
-using LLU.Android.LLU.Models;
-using LLU.LLU.Models;
 using MailKit.Net.Imap;
-using MailKit.Net.Pop3;
 using MimeKit;
 using System.Collections.Generic;
+using System.Linq;
+using MailKit;
+using MailKit.Search;
+using MailKit.Security;
 
+#nullable enable
 namespace LLU.Android.Controllers
 {
     public abstract class Email
     {
-        public static bool CheckConnection(string host,int port, string username, string password)
+        //Get Messages by using an existing client.
+        //Disconnect on finish
+        public static List<MimeMessage>? GetMessages(string host, int port, string username, string password)
         {
-            bool connected = false;
-            using var client = new ImapClient();
-            client.Connect(host, port, false);
-            client.Authenticate(username, password);
-            connected = client.IsConnected;
-            client.Disconnect(true);
-            return connected;
+            using ImapClient? client = Connect(host, port, username, password) ?? null;
+            if (client == null)
+                return null;
+            var inbox = AccessInbox(client);
+            client.DisconnectAsync(true);
+            return inbox;
         }
-        public static List<MimeMessage> GetMessages(string host, int port, string username, string password)
+        public static List<MimeMessage>? GetMessages(ImapClient? client)
         {
-            List<MimeMessage> _messages = new();
-            using var client = new ImapClient();
-            client.Connect(host, port, false);
-            client.Authenticate(username, password);
-            var inbox = client.Inbox;
-            client.Disconnect(true);
 
-            for (var i = 0; i < inbox.Count; i++)
+            var inbox = AccessInbox(client);
+            client.DisconnectAsync(true);
+            return inbox;
+        }
+        public static List<MimeMessage>? AccessInbox(ImapClient client)
+        {
+            List<MimeMessage> messages = new();
+            var state = client.Inbox.Open(FolderAccess.ReadOnly);
+            if (state != FolderAccess.None)
             {
-                _messages.Add(inbox.GetMessage(i));
+                var uids = client.Inbox.Search(SearchQuery.All);
+                messages = uids.Select(uid => client.Inbox.GetMessage(uid)).ToList();
             }
+            return messages;
+        }
 
-            return _messages;
+        //Create a new connection with the server.
+        //Authentificate and return the client.
+        //Instead of crashing the app on failure, give out null, to implement safeguards and fallbacks in-app code. 
+        public static ImapClient? Connect(string host, int port, string username, string password)
+        {
+            var client = new ImapClient ();
+            try
+            {
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+                client.Connect(host, port, SecureSocketOptions.Auto);
+                client.Authenticate(username, password);
+                return client;
+            }
+            catch (System.Exception e)
+            {
+                return null;
+            }
         }
     }
 }

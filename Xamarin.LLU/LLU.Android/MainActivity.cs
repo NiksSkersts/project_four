@@ -1,59 +1,58 @@
-using System;
-using System.Threading;
 using Android.App;
-using Android.Graphics;
-using Android.Widget;
 using Android.OS;
-using AndroidX.RecyclerView.Widget;
-using Xamarin.Essentials;
-using LLU.Android.LLU.Models;
-using MimeKit;
-using System.Collections.Generic;
+using Android.Content;
+using LLU.Android.Views;
 using LLU.Android.Controllers;
+using System.IO;
+using LLU.Android.LLU.Models;
+using System.Collections.Generic;
+using LLU.Models;
 
+#nullable enable
 namespace LLU.Android
 {
     [Activity(Label = "LLU", MainLauncher = true)]
     public class MainActivity : Activity
     {
-        RecyclerView mRecyclerView;
-        RecyclerView.LayoutManager mLayoutManager;
-        EmailsViewAdapter adapter;
-        int count = 1;
-
+        static DatabaseManagement database;
+        public static DatabaseManagement Database
+        {
+            get
+            {
+                if (database == null)
+                {
+                    database = new DatabaseManagement(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "data"));
+                }
+                return database;
+            }
+        }
+        public static EmailUser EmailUserData { get; set; }
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-
-            //Variables
-            List<MimeMessage> _messages = new();
-            var mainDisplayInfo = DeviceDisplay.MainDisplayInfo;
-
-
-            EmailUser user = new EmailUser("", "");
-            user.ReturnMessages();
-            // Set our view from the "main" layout resource
-            SetContentView(Resource.Layout.Main);
-
-
-            // Plug in the linear layout manager:
-            mLayoutManager = new LinearLayoutManager(this);
-            mRecyclerView.SetLayoutManager(mLayoutManager);
-
-            adapter = new EmailsViewAdapter(_messages);
-            // Get our button from the layout resource,
-            // and attach an event to it
-            //Button button = FindViewById<Button>(Resource.Id.myButton);
-            LinearLayout layout = FindViewById<LinearLayout>(Resource.Id.mainLayout);
-            RecyclerView recyclerView = new RecyclerView(Application.Context);
-            recyclerView.SetMinimumHeight((int)mainDisplayInfo.Height);
-            recyclerView.SetMinimumWidth(((int)mainDisplayInfo.Width));
-            recyclerView.SetBackgroundColor(color:new Color(0,0,0));
-            recyclerView.SetAdapter(adapter);
-            layout.AddView(recyclerView);
-            //button.Click += delegate { button.Text = $"{count++} clicks!"; };
-
         }
-            
+        protected override void OnPostCreate(Bundle? savedInstanceState)
+        {
+            base.OnPostCreate(savedInstanceState);
+            List<UserData> userdata = Database.GetUserData().Result;
+            //Assumption is that later on in development, I will add more than one email user.
+            //If there's no data - request that user does login.
+            if (userdata == null || userdata.Count == 0)
+            {
+                Intent login = new(this, typeof(Login));
+                StartActivity(login);
+            }
+            else if (userdata.Count == 1)
+            {
+                EmailUserData = new EmailUser(userdata[0].Username, userdata[0].Password);
+                Intent intent = new(Application.Context, typeof(EmailActivity));
+                StartActivity(intent);
+            }
+            Finish();
         }
+        protected override void OnResume()
+        {
+            base.OnResume();
+        }
+    }
     }

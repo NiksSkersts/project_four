@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <TextView
+            android:text="Subject"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" 
+            android:id="@+id/EB_Subject"/>
+    <TextView
+            android:text="From"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" 
+            android:id="@+id/EB_From"/>
+    <TextView
+            android:text="To"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" 
+            android:id="@+id/EB_To"/>
+    <android.webkit.WebView
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/EB_Body"/>
+</LinearLayout>
