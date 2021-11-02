@@ -1,12 +1,13 @@
-using Android.App;
+﻿using Android.App;
 using Android.OS;
-using Android.Content;
 using LLU.Android.Views;
 using LLU.Android.Controllers;
 using System.IO;
 using LLU.Android.LLU.Models;
 using System.Collections.Generic;
 using LLU.Models;
+using Android.Content;
+using Android.Content.PM;
 
 #nullable enable
 namespace LLU.Android
@@ -26,10 +27,18 @@ namespace LLU.Android
                 return database;
             }
         }
-        public static EmailUser EmailUserData { get; set; }
+        public static EmailUser? EmailUserData { get; set; }
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+            Xamarin.Essentials.Platform.Init(this, savedInstanceState);
+        }
+        //pievienot visām aktivitātēm
+        public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
+        {
+            Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+
+            base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
         protected override void OnPostCreate(Bundle? savedInstanceState)
         {

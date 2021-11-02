@@ -50,8 +50,13 @@ namespace LLU.Android.Views
         private void OnItemClick(object sender, int position)
         {
             var num = position;
+            var htmlbody = _messages[num].HtmlBody;
+            var text = _messages[num].TextBody;
             var intent = new Intent(this, typeof(EmailBody));
-            intent.PutExtra("Body", _messages[num].HtmlBody);
+            if(htmlbody!= null)
+                intent.PutExtra("Body", new string[2] { _messages[num].HtmlBody,"html" });
+            else intent.PutExtra("Body", new string[2] { _messages[num].TextBody, "txt"});
+
             intent.PutExtra("From", _messages[num].From.ToString());
             intent.PutExtra("To", _messages[num].To.ToString());
             intent.PutExtra("Subject", _messages[num].Subject);

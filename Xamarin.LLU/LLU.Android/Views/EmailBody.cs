@@ -26,7 +26,7 @@ namespace LLU.Android
             Body = FindViewById<WebView>(Resource.Id.EB_Body);
             if (Intent.Extras != null)
             {
-                var body = Intent.Extras.GetString("Body");
+                var body = Intent.Extras.GetStringArray("Body");
                 var from = Intent.Extras.GetString("From");
                 var to = Intent.Extras.GetString("To");
                 var subject = Intent.Extras.GetString("Subject");
@@ -34,7 +34,12 @@ namespace LLU.Android
                 Subject.Text = subject;
                 From.Text = from;
                 To.Text = to;
-                Body.LoadDataWithBaseURL(null,body, "text/html", "UTF-8",null);
+
+                //Switch between two types of email. HTML and plain.
+                //plain and hmtl have different formating, and is not cross-supported in webmail.
+                //plain text in html mode looks bad and vice-versa
+                var type = $"text/{body[1]}";
+                Body.LoadDataWithBaseURL(null, body[0], type, "UTF-8", null);
             }
         }
     }
