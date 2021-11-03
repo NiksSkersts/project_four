@@ -36,10 +36,6 @@ namespace LLU.Android.Views
         {
             EmailUser user = new(usernamefield.Text.ToLower(), passwordfield.Text);
             MainActivity.EmailUserData = user;
-            //string folder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
-            // string path = Path.Combine(folder, "login");
-            //temp
-            
         }
     }
 }

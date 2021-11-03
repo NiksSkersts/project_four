@@ -11,7 +11,7 @@ namespace LLU.Android.LLU.Models
     public class EmailUser
     {
         readonly DatabaseManagement db = MainActivity.Database;
-        //DISCLAIMER: thisdata is publicly available for everyone to see.
+        //DISCLAIMER: this data is publicly available for everyone to see.
         private readonly string host = "mail.llu.lv";
         private readonly int port = 993;
         //END OF DISCLAIMER
@@ -77,11 +77,7 @@ namespace LLU.Android.LLU.Models
 
             _messages?.Reverse();
         }
-        private void SaveMessagesToDB(UserData userdata)
-        {
-            var user = db.GetUserData();
-            db.SaveAllEmailAsync(_messages, userdata.UserID);
-        }
+        private void SaveMessagesToDB(UserData userdata) => db.SaveAllEmailAsync(_messages, userdata.UserID);
         public List<MimeMessage>? ReturnMessages()
         {
             if (_messages.Count == 0 || _messages == null)

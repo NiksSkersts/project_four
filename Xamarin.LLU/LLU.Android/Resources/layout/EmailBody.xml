@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/EmailMainLayout"
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
@@ -20,7 +21,16 @@
             android:layout_height="wrap_content" 
             android:id="@+id/EB_To"/>
     <android.webkit.WebView
-        android:layout_width="fill_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/EB_Body"/>
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/EB_Body"/>
+    <FrameLayout
+        android:id="@+id/AttachmentFrame"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/AttachmentFileName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </FrameLayout>
 </LinearLayout>

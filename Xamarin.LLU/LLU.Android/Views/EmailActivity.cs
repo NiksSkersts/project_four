@@ -1,6 +1,7 @@
 ﻿using Android.App;
 using Android.Content;
 using Android.Graphics;
+using Android.Net;
 using Android.OS;
 using Android.Widget;
 using AndroidX.RecyclerView.Widget;
@@ -8,6 +9,8 @@ using LLU.Android.Controllers;
 using MimeKit;
 using System.Collections.Generic;
 using Xamarin.Essentials;
+using System.IO;
+using System;
 
 #nullable enable
 namespace LLU.Android.Views
@@ -22,7 +25,6 @@ namespace LLU.Android.Views
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            
             var mainDisplayInfo = DeviceDisplay.MainDisplayInfo;
             _messages = MainActivity.EmailUserData.ReturnMessages();
 
@@ -49,17 +51,27 @@ namespace LLU.Android.Views
         }
         private void OnItemClick(object sender, int position)
         {
+            //Create an intent to launch a new activity.
+            //This is the time to bundle up extra message data and pass it down to the next activity!
+            var intent = new Intent(this, typeof(EmailBody));
+
             var num = position;
             var htmlbody = _messages[num].HtmlBody;
-            var text = _messages[num].TextBody;
-            var intent = new Intent(this, typeof(EmailBody));
-            if(htmlbody!= null)
+            intent.PutExtra("PositionInDb", num);
+
+            if (htmlbody!= null)
                 intent.PutExtra("Body", new string[2] { _messages[num].HtmlBody,"html" });
             else intent.PutExtra("Body", new string[2] { _messages[num].TextBody, "txt"});
 
             intent.PutExtra("From", _messages[num].From.ToString());
             intent.PutExtra("To", _messages[num].To.ToString());
             intent.PutExtra("Subject", _messages[num].Subject);
+            if (_messages[num].Attachments!=null)
+                intent.PutExtra("Attachments",true);
+
+            var filepaths = Controllers.Email.SaveAttachments(_messages[num]);
+            if (filepaths != null)
+                intent.PutExtra("AttachmentLocationOnDevice", filepaths);
             StartActivity(intent);
         }
     }

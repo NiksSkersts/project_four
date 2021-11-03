@@ -4,5 +4,6 @@
     <SelectedDevice>OnePlus GM1903</SelectedDevice>
     <ActiveDebugProfile>OnePlus GM1903</ActiveDebugProfile>
     <AndroidDesignerPreferredDevice>Nexus 4</AndroidDesignerPreferredDevice>
+    <AndroidDesignerPreferredTheme>Theme.DeviceDefault</AndroidDesignerPreferredTheme>
   </PropertyGroup>
 </Project>

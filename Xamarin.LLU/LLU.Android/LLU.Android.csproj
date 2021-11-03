@@ -57,6 +57,7 @@
     <Compile Include="Controllers\Email.cs" />
     <Compile Include="Controllers\EmailsViewAdapter.cs" />
     <Compile Include="Models\EmailsViewHolder.cs" />
+    <Compile Include="Views\ArrayList.cs" />
     <Compile Include="Views\EmailActivity.cs" />
     <Compile Include="Views\EmailBody.cs" />
     <Compile Include="MainActivity.cs" />
@@ -66,6 +67,7 @@
     <Compile Include="Views\Login.cs" />
   </ItemGroup>
   <ItemGroup>
+    <AndroidAsset Include="Assets\FontAwesome.ttf" />
     <None Include="Resources\AboutResources.txt" />
     <None Include="Properties\AndroidManifest.xml" />
     <None Include="Assets\AboutAssets.txt" />
@@ -76,9 +78,6 @@
     <AndroidResource Include="Resources\values\strings.xml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack">
-      <Version>1.11.37</Version>
-    </PackageReference>
     <PackageReference Include="MailKit" Version="2.15.0" />
     <PackageReference Include="MimeKit" Version="3.0.0-preview1" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.10" />
@@ -95,6 +94,18 @@
     <PackageReference Include="System.Security.Permissions" Version="6.0.0-rc.2.21480.5" />
     <PackageReference Include="System.Security.Principal.Windows" Version="6.0.0-preview.5.21301.5" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="6.0.0-rc.2.21480.5" />
+    <PackageReference Include="xamarin-iconify">
+      <Version>1.0.3</Version>
+    </PackageReference>
+    <PackageReference Include="xamarin-iconify-common">
+      <Version>1.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="xamarin-iconify-fontawesome">
+      <Version>1.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="xamarin-iconify-material">
+      <Version>1.0.0</Version>
+    </PackageReference>
     <PackageReference Include="Xamarin.AndroidX.Annotation" Version="1.2.0.3" />
     <PackageReference Include="Xamarin.AndroidX.CardView">
       <Version>1.0.0.11</Version>
@@ -106,6 +117,9 @@
     <PackageReference Include="Xamarin.Essentials">
       <Version>1.7.0</Version>
     </PackageReference>
+    <PackageReference Include="Xamarin.Google.Android.Material" Version="1.1.0.5-rc3" />
+    <PackageReference Include="Xamarin.AndroidX.Legacy.Support.V4" Version="1.0.0.5" />
+    <PackageReference Include="Xamarin.AndroidX.MediaRouter" Version="1.2.0" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\EmailView.xml">
@@ -116,6 +130,9 @@
     <AndroidResource Include="Resources\layout\Login.xml">
       <SubType>Designer</SubType>
     </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\drawable\" />
   </ItemGroup>
   <Import Project="..\LLU\LLU.projitems" Label="Shared" Condition="Exists('..\LLU\LLU.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />

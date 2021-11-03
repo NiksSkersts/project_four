@@ -5,15 +5,94 @@ using System.Linq;
 using MailKit;
 using MailKit.Search;
 using MailKit.Security;
+using System.IO;
 
 #nullable enable
 namespace LLU.Android.Controllers
 {
     public abstract class Email
     {
-        //Get Messages by using an existing client.
-        //Disconnect on finish
-        public static List<MimeMessage>? GetMessages(string host, int port, string username, string password)
+        public static string FilePath(string filename) => Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), filename);
+        public static void SaveMimePart(MimePart attachment, string fileName)
+		{
+            using var stream = File.Create(FilePath(fileName));
+            attachment.Content.DecodeTo(stream);
+        }
+
+		public static void SaveMimePart(MessagePart attachment, string fileName)
+		{
+            using var stream = File.Create(FilePath(fileName));
+            attachment.Message.WriteTo(stream);
+        }
+
+		public static string[]? SaveAttachments(MimeMessage message)
+		{
+            var attachmentcount = message.Attachments.Count();
+            if (attachmentcount == 0)
+                return null;
+
+            string[] filepaths = new string[attachmentcount];
+            var i = 0;
+			foreach (var attachment in message.Attachments)
+			{
+                var filepath = string.Empty;
+                if (attachment is MessagePart)
+				{
+					var fileName = attachment.ContentDisposition?.FileName;
+					var rfc822 = (MessagePart)attachment;
+
+					if (string.IsNullOrEmpty(fileName))
+						fileName = "attached-message.eml";
+
+                    filepath = FilePath(fileName);
+                    using var stream = File.Create(filepath);
+                    rfc822.Message.WriteTo(stream);
+                }
+				else
+				{
+					var part = (MimePart)attachment;
+					var fileName = part.FileName;
+
+                    filepath = FilePath(fileName);
+                    using var stream = File.Create(filepath);
+                    part.Content.DecodeTo(stream);
+                }
+                filepaths[i] = filepath;
+                i++;
+			}
+            return filepaths;
+		}
+		public static void SaveBodyParts(MimeMessage message)
+		{
+			foreach (var bodyPart in message.BodyParts)
+			{
+				if (!bodyPart.IsAttachment)
+					continue;
+
+				if (bodyPart is MessagePart)
+				{
+					var fileName = bodyPart.ContentDisposition?.FileName;
+					var rfc822 = (MessagePart)bodyPart;
+
+					if (string.IsNullOrEmpty(fileName))
+						fileName = "attached-message.eml";
+
+                    using var stream = File.Create(FilePath(fileName));
+                    rfc822.Message.WriteTo(stream);
+                }
+				else
+				{
+					var part = (MimePart)bodyPart;
+					var fileName = part.FileName;
+
+                    using var stream = File.Create(FilePath(fileName));
+                    part.Content.DecodeTo(stream);
+                }
+			}
+		}
+		//Get Messages by using an existing client.
+		//Disconnect on finish
+		public static List<MimeMessage>? GetMessages(string host, int port, string username, string password)
         {
             using ImapClient? client = Connect(host, port, username, password) ?? null;
             if (client == null)
