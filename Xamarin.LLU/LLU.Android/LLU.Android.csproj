@@ -55,9 +55,10 @@
   <ItemGroup>
     <Compile Include="Controllers\DatabaseManagement.cs" />
     <Compile Include="Controllers\Email.cs" />
+    <Compile Include="Controllers\AttachmentViewAdapter.cs" />
     <Compile Include="Controllers\EmailsViewAdapter.cs" />
+    <Compile Include="Models\AttachmentViewHolder.cs" />
     <Compile Include="Models\EmailsViewHolder.cs" />
-    <Compile Include="Views\ArrayList.cs" />
     <Compile Include="Views\EmailActivity.cs" />
     <Compile Include="Views\EmailBody.cs" />
     <Compile Include="MainActivity.cs" />
@@ -67,7 +68,6 @@
     <Compile Include="Views\Login.cs" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidAsset Include="Assets\FontAwesome.ttf" />
     <None Include="Resources\AboutResources.txt" />
     <None Include="Properties\AndroidManifest.xml" />
     <None Include="Assets\AboutAssets.txt" />

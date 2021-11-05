@@ -21,8 +21,8 @@ namespace LLU.Android.Controllers
         {
             EmailsViewHolder vh = holder as EmailsViewHolder ?? throw new InvalidOperationException();
             vh.Subject.Text = _messages[position].Subject;
-            vh.From.Text = _messages[position].From.ToString();
-            vh.Time.Text = _messages[position].Date.ToString();
+            vh.From.Text = $"{_messages[position].From}";
+            vh.Time.Text = $"{_messages[position].Date.Day}/{_messages[position].Date.Month}/{_messages[position].Date.Year}";
         }
 
         public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)

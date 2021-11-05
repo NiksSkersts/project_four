@@ -19,18 +19,23 @@ namespace LLU.Android
     [Activity(Label = "EmailBody")]
     public class EmailBody : Activity
     {
+        private Dictionary<string, string> data = null;
         private Dictionary<string,string> AttachmentData {
             get
             {
+                if(data!=null)
+                    return data;
+
                 var filepaths = IntentAttachments;
                 if (filepaths == null)
-                    return null;
+                    return new();
                 var names = new Dictionary<string,string>();
                 foreach (var path in filepaths)
                 {
                     var name = path.Split('/');
                     names.Add(name[name.Length-1], path);
                 }
+                data = names;
                 return names;
             }
         }
@@ -48,6 +53,7 @@ namespace LLU.Android
         }
         public TextView Subject { get; set; }
         public LinearLayout MainLayout { get; set; }
+        public RecyclerView AttachmentFrame { get; set; }
         public TextView From { get; set; }
         public TextView To { get; set; }
         public WebView Body { get; set; }
@@ -61,13 +67,12 @@ namespace LLU.Android
             Subject = FindViewById<TextView>(Resource.Id.EB_Subject);
             From = FindViewById<TextView>(Resource.Id.EB_From);
             To = FindViewById<TextView>(Resource.Id.EB_To);
-            Body = FindViewById<WebView>(Resource.Id.EB_Body);
-
+            Body = new WebView(this);
             if (Intent.Extras != null)
             {
                 var body = Intent.Extras.GetStringArray("Body");
-                var from = Intent.Extras.GetString("From");
-                var to = Intent.Extras.GetString("To");
+                var from = $"Nosūtītājs <{Intent.Extras.GetString("From")}>";
+                var to = $"Saņēmējs <{Intent.Extras.GetString("To")}>";
                 var subject = Intent.Extras.GetString("Subject");
 
                 Subject.Text = subject;
@@ -80,35 +85,17 @@ namespace LLU.Android
                 var type = $"text/{body[1]}";
                 Body.LoadDataWithBaseURL(null, body[0], type, "UTF-8", null);
             }
+
             if (AttachmentData != null)
             {
-                TextView temp = new(this)
-                {
-                    Text = "Pielikumi",
-                    Clickable = false
-                };
-                MainLayout.AddView(temp);
-                for (int i = 0; i<AttachmentData.Count;i++)
-                {
-                    temp = new(this)
-                    {
-                        Text = AttachmentData.Keys.ToArray()[i],
-                        Clickable = true
-                    };
-                    temp.Click += AttachmentClick;
-                    MainLayout.AddView(temp);
-                }
+                AttachmentFrame = new(this);
+                var adapter = new AttachmentViewAdapter(AttachmentData);
+                var layoutmanager = new LinearLayoutManager(Application.Context);
+                AttachmentFrame.SetAdapter(adapter);
+                AttachmentFrame.SetLayoutManager(layoutmanager);
+                MainLayout.AddView(AttachmentFrame);
             }
-        }
-
-        private void AttachmentClick(object sender, System.EventArgs e)
-        {
-            var attachment = sender as TextView;
-            var filename = attachment.Text;
-            Launcher.OpenAsync(new OpenFileRequest()
-            {
-                File = new ReadOnlyFile(AttachmentData.Single(key=>key.Key.Equals(filename)).Value)
-            });
+            //MainLayout.AddView(Body);
         }
     }
 }
