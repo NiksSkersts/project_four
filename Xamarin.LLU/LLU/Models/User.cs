@@ -1,5 +1,8 @@
-﻿using LLU.Android.Controllers;
+﻿using Android.App;
+using Android.Content.Res;
+using LLU.Android.Controllers;
 using LLU.Android.LLU.Models;
+using Newtonsoft.Json;
 using System;
 using System.IO;
 
@@ -22,11 +25,24 @@ namespace LLU.Models
                 return database;
             }
         }
-        //todo move out data that could be interpreted as secret
-        //DISCLAIMER: this data is publicly available for everyone to see.
-        protected string Host => "mail.llu.lv";
-        protected int Port => 993;
-        //END OF DISCLAIMER
+        private static Secrets secret;
+        protected static Secrets Secrets
+        {
+            get
+            {
+                if(secret !=null)
+                    return secret;
+
+                AssetManager assets = Application.Context.Assets;
+                using var streamReader = new StreamReader(assets.Open("secrets"));
+                var stream = streamReader.ReadToEnd();
+                var secrets = JsonConvert.DeserializeObject<Secrets>(stream);
+                secret = secrets;
+                return secrets;
+            }
+        }
+        protected string Host { get; set; }
+        protected int Port { get; set; }
         protected string Userid { get; set; }
         protected string Username { get; set; }
         protected string Password { get; set; }

@@ -3,6 +3,7 @@ using Android.Content;
 using Android.OS;
 using Android.Widget;
 using LLU.Android.Controllers;
+using LLU.Models;
 using System;
 
 namespace LLU.Android.Views
@@ -37,15 +38,16 @@ namespace LLU.Android.Views
                 {
                     MessagingManager.ShowConnnectionErrorInternalFailure();
                     userdata = null;
+                    User.Database.WipeDatabase();
                     goto sec_check;
                 }
                 else
                 {
                     Intent intent = new(Application.Context, typeof(EmailActivity));
                     StartActivity(intent);
+                    Finish();
                 }
             }
-            Finish();
         }
 
         private void DoLogin(object sender, EventArgs e)

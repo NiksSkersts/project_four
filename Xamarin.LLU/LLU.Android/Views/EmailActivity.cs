@@ -14,43 +14,40 @@ using System;
 using System.Collections.Generic;
 using Xamarin.Essentials;
 
-#nullable enable
 namespace LLU.Android.Views
 {
     [Activity(Label = "EmailActivity")]
     public class EmailActivity : Activity
     {
         List<int> SelectedMessages = new();
-        Button Seen;
-        Button SeenAll;
-        Button Delete;
-        Button DeleteAll;
         private RecyclerView _recyclerView = new(Application.Context);
         private RecyclerView.LayoutManager mLayoutManager;
         private EmailsViewAdapter adapter;
-        private List<MimeMessage>? _messages;
+        private List<MimeMessage> _messages = new();
+        DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
             Platform.Init(this, savedInstanceState);
             Iconify.With(new MaterialModule());
-            var mainDisplayInfo = DeviceDisplay.MainDisplayInfo;
-            _messages = EmailUser.EmailUserData.GetMessages();
-
-            //create a new instance of _messages to prevent adapter from crashing
-            if (_messages == null)
-                _messages = new List<MimeMessage>();
             SetContentView(Resource.Layout.EmailActivity);
-
-
-            Seen = FindViewById<Button>(Resource.Id.ToolbarMainSeen);
-            SeenAll = FindViewById<Button>(Resource.Id.ToolbarMainSeenAll);
-            Delete = FindViewById<Button>(Resource.Id.ToolbarMainDelete);
-            DeleteAll = FindViewById<Button>(Resource.Id.ToolbarMainDeleteAll);
+            Button Seen = FindViewById<Button>(Resource.Id.ToolbarMainSeen);
+            Button SeenAll = FindViewById<Button>(Resource.Id.ToolbarMainSeenAll);
+            Button Delete = FindViewById<Button>(Resource.Id.ToolbarMainDelete);
+            Button DeleteAll = FindViewById<Button>(Resource.Id.ToolbarMainDeleteAll);
             Seen.Click += ExecuteSeen;
             SeenAll.Click += ExecuteSeenAll;
             Delete.Click += ExecuteDelete;
             DeleteAll.Click += ExecuteDeleteAll;
+        }
+        protected override void OnPostCreate(Bundle? savedInstanceState)
+        {
+            base.OnPostCreate(savedInstanceState);
+
+            _messages.AddRange(EmailUser.EmailUserData.GetMessages());
+            //create a new instance of _messages to prevent adapter from crashing
+            if (_messages == null)
+                _messages = new List<MimeMessage>();
 
             //Initialize adapter
             adapter = new EmailsViewAdapter(_messages);
@@ -59,8 +56,8 @@ namespace LLU.Android.Views
 
             //Initialize Recyclerview for listing emails
             LinearLayout layout = FindViewById<LinearLayout>(Resource.Id.mainLayout);
-            _recyclerView.SetMinimumHeight((int)mainDisplayInfo.Height);
-            _recyclerView.SetMinimumWidth(((int)mainDisplayInfo.Width));
+            _recyclerView.SetMinimumHeight((int)_displayInfo.Height);
+            _recyclerView.SetMinimumWidth(((int)_displayInfo.Width));
             _recyclerView.SetBackgroundColor(color: new Color(0, 0, 0));
             _recyclerView.SetAdapter(adapter);
 
@@ -68,9 +65,7 @@ namespace LLU.Android.Views
             mLayoutManager = new LinearLayoutManager(Application.Context);
             _recyclerView.SetLayoutManager(mLayoutManager);
             layout?.AddView(_recyclerView);
-           
         }
-
         private void OnItemLongClick(object sender, int e)
         {
             SelectedMessages.Add(e);
@@ -124,7 +119,7 @@ namespace LLU.Android.Views
             if (_messages[num].Attachments != null)
                 intent.PutExtra("Attachments", true);
 
-            var filepaths = Controllers.EmailController.SaveAttachments(_messages[num]);
+            var filepaths = EmailController.SaveAttachments(_messages[num]);
             if (filepaths != null)
                 intent.PutExtra("AttachmentLocationOnDevice", filepaths);
             StartActivity(intent);

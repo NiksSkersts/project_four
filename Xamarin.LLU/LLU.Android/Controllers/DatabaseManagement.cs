@@ -58,9 +58,6 @@ namespace LLU.Android.Controllers
         public int ApplyChanges(List<MimeMessage> data, string userID)
         {
             var count = 0;
-            var isChanged = CheckForChanges(userID);
-            if (!isChanged)
-                return count;
             try
             {
                 foreach (var item in data)

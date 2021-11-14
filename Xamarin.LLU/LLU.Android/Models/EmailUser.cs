@@ -5,14 +5,13 @@ using MimeKit;
 using System;
 using System.Collections.Generic;
 
-#nullable enable
 namespace LLU.Android.LLU.Models
 {
     public class EmailUser : User
     {
-        protected ImapClient? _client;
+        protected ImapClient _client;
         //WARNING: Client should be disconnected after being used!
-        private ImapClient? Client
+        private ImapClient Client
         {
             get
             {
@@ -28,28 +27,37 @@ namespace LLU.Android.LLU.Models
 
             }
         }
+        public bool IsAbleToConnect
+        {
+            get
+            {
+                try
+                {
+                    using var client = Client;
+                    if (client == null)
+                        return false;
+                    if (Client.IsConnected)
+                    {
+                        Client.DisconnectAsync(true);
+                        return true;
+                    }
+                    return false;
+                }
+                catch
+                {
+                    return false;
+                }
 
-        protected List<MimeMessage>? _messages;
+            }
+        }
+
+        protected List<MimeMessage> _messages;
         private List<MimeMessage> Messages
         {
             get
             {
                 DoItAgain:
-                if (_messages == null)
-                {
-                    using var client = Client;
-                    if (client == null)
-                        return new();
-                    List<MimeMessage> messages = EmailController.GetMessages(client);
-                    if (messages != null)
-                    {
-                        messages.Reverse();
-                        client.DisconnectAsync(true);
-                        Database.ApplyChanges(messages,Userid);
-                        _messages = messages;
-                    }
-                }
-                else
+                if(_messages != null)
                 {
                     var isChanged = Database.CheckForChanges(Userid);
                     if (isChanged)
@@ -59,24 +67,41 @@ namespace LLU.Android.LLU.Models
                     }
                     return _messages;
                 }
-                return new();
+                using var client = Client;
+                if (client != null)
+                {
+                    List<MimeMessage> messages = EmailController.GetMessages(client);
+                    if (messages != null)
+                    {
+                        messages.Reverse();
+                        Database.ApplyChanges(messages, Userid);
+                        client.DisconnectAsync(true);
+                        _messages = messages;
+                    }
+                }
+                return null;
             }
+        }
+        //Gets and assigns secrets from deserialized json file, before the rest of the construction begins.
+        private EmailUser()
+        {
+            Host = Secrets.MailServer;
+            Port = Secrets.MailPort;
         }
 
         //Constructor creates a new EmailUser from username and password
         //It's used at times when app can't find any users in database
         //Assumption remains that this constructor is used at first-launch of the application or when app fails to connect with using database data (credential change)
-        public EmailUser(string username, string password)
+        public EmailUser(string username, string password):this()
         {
             UserData userData = new();
             try
             {
-                //Remove the @llu.lv part, if the client added it, just in case.
+                //Remove the @llu.lv part, if the client added it.
                 var userid = username.Split('@')[0];
                 userData.UserID = userid;
                 userData.Username = userid;
                 userData.Password = password;
-                _ = Database.SaveUserAsync(userData).Result;
             }
             catch (Exception e)
             {
@@ -85,23 +110,17 @@ namespace LLU.Android.LLU.Models
             Userid = userData.UserID;
             Username = userData.Username;
             Password = userData.Password;
-            if (Messages != null)
-                SaveMessagesToDB(Messages, userData);
         }
 
         //Constructor gets user data from database at app start and builds cache from that.
-        public EmailUser()
+        public EmailUser(UserData data)
         {
-            var data = AccountManager.UserData;
             if (data != null)
             {
                 Username = data.Username;
                 Password = data.Password;
-                if (Messages != null)
-                    SaveMessagesToDB(Messages, data);
             }
         }
-        private void SaveMessagesToDB(List<MimeMessage> messages, UserData userdata) => Database.ApplyChanges(messages, userdata.UserID);
         public string GetUserid() => Userid;
         public List<MimeMessage> GetMessages() => Messages;
         public void DeleteMessages(List<string> Uids)
