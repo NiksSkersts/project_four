@@ -4,7 +4,6 @@ using MailKit.Net.Imap;
 using MimeKit;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 #nullable enable
 namespace LLU.Android.LLU.Models
@@ -19,7 +18,7 @@ namespace LLU.Android.LLU.Models
             {
                 if (_client == null)
                 {
-                    var client = Email.Connect(Host, Port, Username, Password);
+                    var client = EmailController.Connect(Host, Port, Username, Password);
                     if (client != null)
                         _client = client;
                     else
@@ -30,29 +29,34 @@ namespace LLU.Android.LLU.Models
             }
         }
 
-        protected List<MimeMessage> _messages;
+        protected List<MimeMessage>? _messages;
         private List<MimeMessage> Messages
         {
             get
             {
+                DoItAgain:
                 if (_messages == null)
                 {
                     using var client = Client;
                     if (client == null)
                         return new();
-                    _messages = Email.GetMessages(client);
-                    if (_messages == null)
+                    List<MimeMessage> messages = EmailController.GetMessages(client);
+                    if (messages != null)
                     {
-                        _messages = new();
-                    }else
-                    {
-                        _messages?.Reverse();
+                        messages.Reverse();
                         client.DisconnectAsync(true);
-                       
+                        Database.ApplyChanges(messages,Userid);
+                        _messages = messages;
                     }
                 }
                 else
                 {
+                    var isChanged = Database.CheckForChanges(Userid);
+                    if (isChanged)
+                    {
+                        _messages = null;
+                        goto DoItAgain;
+                    }
                     return _messages;
                 }
                 return new();
@@ -97,7 +101,7 @@ namespace LLU.Android.LLU.Models
                     SaveMessagesToDB(Messages, data);
             }
         }
-        private void SaveMessagesToDB(List<MimeMessage> messages, UserData userdata) => Database.SaveAllEmailAsync(messages, userdata.UserID);
+        private void SaveMessagesToDB(List<MimeMessage> messages, UserData userdata) => Database.ApplyChanges(messages, userdata.UserID);
         public string GetUserid() => Userid;
         public List<MimeMessage> GetMessages() => Messages;
         public void DeleteMessages(List<string> Uids)

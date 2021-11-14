@@ -15,15 +15,11 @@ namespace LLU.Android.Controllers
             database = new SQLiteAsyncConnection(DbPath);
             database.CreateTableAsync<DatabaseData>().Wait();
             database.CreateTableAsync<UserData>().Wait();
-            database.CreateTableAsync<EmailIDs>().Wait();
-            database.CreateTableAsync<EmailHistory>().Wait();
         }
         public int WipeDatabase()
         {
             var sum = database.DeleteAllAsync<DatabaseData>().Result;
             sum += database.DeleteAllAsync<UserData>().Result;
-            sum += database.DeleteAllAsync<EmailIDs>().Result;
-            sum += database.DeleteAllAsync<EmailHistory>().Result;
             return sum;
         }
         public Task<UserData> GetUserData() => database.Table<UserData>().FirstOrDefaultAsync();
@@ -31,44 +27,40 @@ namespace LLU.Android.Controllers
         public Task<List<DatabaseData>> GetEmailData() => database.Table<DatabaseData>().ToListAsync();
         public List<string> GetPresentEmail(string userid)
         {
-            var data = database.Table<EmailIDs>().ToListAsync();
+            var data = database.Table<DatabaseData>().ToListAsync();
             var idslist = new List<string>();
             foreach (var id in data.Result)
             {
                 if (id.UserID.Equals(userid))
                 {
-                    idslist.Add(id.MessageID);
+                    idslist.Add(id.Id);
                 }
             }
 
             return idslist;
         }
-        public void AddToHistory(int amount, string userid) => database.InsertOrReplaceAsync(new EmailHistory { UserID = userid, Emails = amount });
-        public int GetEmailCount(string userid)
+        public Task<int> SaveUserAsync(UserData data) => database.InsertAsync(data, typeof(UserData));
+        public Task<int> DeleteMessage(string id)
         {
-            try
-            {
-                var x = database.Table<EmailHistory>()
-                    .Where(id => id.UserID.Equals(userid))
-                    .FirstAsync()
-                    .Result;
-                if (x != null)
-                    return x.Emails;
-                return 0;
-            }
-            catch
-            {
-                return 0;
-            }
-
+            var row = database.Table<DatabaseData>().Where(q => q.Id.Equals(id)).FirstOrDefaultAsync().Result;
+            row.DeleteFlag = true;
+            return database.InsertOrReplaceAsync(row);
         }
-        public bool SaveAllEmailAsync(List<MimeMessage> data, string userID)
+        public int GetCurrentMessageCount() => database.Table<DatabaseData>().CountAsync().Result;
+        public bool CheckForChanges(string userID)
         {
-            //Check if email is already present in DB and add missing emails.
-            var db = GetPresentEmail(userID);
-            var x = GetEmailCount(userID);
-            if (db.Count == x && db.Count != 0)
+            var dataInDb = GetPresentEmail(userID);
+            var CurrentCount = GetCurrentMessageCount();
+            if (CurrentCount > dataInDb.Count || CurrentCount < dataInDb.Count)
                 return true;
+            return false;
+        }
+        public int ApplyChanges(List<MimeMessage> data, string userID)
+        {
+            var count = 0;
+            var isChanged = CheckForChanges(userID);
+            if (!isChanged)
+                return count;
             try
             {
                 foreach (var item in data)
@@ -81,28 +73,20 @@ namespace LLU.Android.Controllers
                     datatemp.Subject = item.Subject;
                     datatemp.Time = item.Date;
                     if (item.HtmlBody != null)
-                        datatemp.Body = item.HtmlBody;
-                    else datatemp.Body = item.TextBody;
-                    if (!db.Exists(id => id.Equals(item.MessageId)))
                     {
-                        database.InsertAsync(datatemp);
-                        database.InsertAsync(new EmailIDs { UserID = userID, MessageID = item.MessageId });
+                        datatemp.Body = item.HtmlBody;
+                        datatemp.IsHtmlBody = true;
                     }
+                    else datatemp.Body = item.TextBody;
+                    if (database.Table<DatabaseData>().CountAsync(q => q.Id.Equals(item.MessageId)).Result != 0)
+                        count += database.InsertAsync(datatemp).Result;
                 }
-                AddToHistory(db.Count, userID);
             }
             catch
             {
-                return false;
+                return count;
             }
-            return true;
-        }
-        public Task<int> SaveUserAsync(UserData data) => database.InsertAsync(data, typeof(UserData));
-        public Task<int> DeleteMessage(string id)
-        {
-            var row = database.Table<DatabaseData>().Where(q => q.Id.Equals(id)).FirstOrDefaultAsync().Result;
-            row.DeleteFlag = true;
-            return database.InsertOrReplaceAsync(row);
+            return count;
         }
 
     }

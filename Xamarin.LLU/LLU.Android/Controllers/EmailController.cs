@@ -1,3 +1,5 @@
+﻿using Android.App;
+using Android.Widget;
 using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Search;
@@ -11,7 +13,7 @@ using System.Linq;
 #nullable enable
 namespace LLU.Android.Controllers
 {
-    public abstract class Email
+    public abstract class EmailController
     {
         public static string FilePath(string filename) => Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), filename);
         public static void SaveMimePart(MimePart attachment, string fileName)
@@ -37,14 +39,12 @@ namespace LLU.Android.Controllers
             foreach (var attachment in message.Attachments)
             {
                 var filepath = string.Empty;
-                if (attachment is MessagePart)
+                if (attachment is MessagePart part1)
                 {
                     var fileName = attachment.ContentDisposition?.FileName;
-                    var rfc822 = (MessagePart)attachment;
-
+                    var rfc822 = part1;
                     if (string.IsNullOrEmpty(fileName))
                         fileName = "attached-message.eml";
-
                     filepath = FilePath(fileName);
                     using var stream = File.Create(filepath);
                     rfc822.Message.WriteTo(stream);
@@ -53,7 +53,6 @@ namespace LLU.Android.Controllers
                 {
                     var part = (MimePart)attachment;
                     var fileName = part.FileName;
-
                     filepath = FilePath(fileName);
                     using var stream = File.Create(filepath);
                     part.Content.DecodeTo(stream);
@@ -70,14 +69,12 @@ namespace LLU.Android.Controllers
                 if (!bodyPart.IsAttachment)
                     continue;
 
-                if (bodyPart is MessagePart)
+                if (bodyPart is MessagePart part1)
                 {
                     var fileName = bodyPart.ContentDisposition?.FileName;
-                    var rfc822 = (MessagePart)bodyPart;
-
+                    var rfc822 = part1;
                     if (string.IsNullOrEmpty(fileName))
                         fileName = "attached-message.eml";
-
                     using var stream = File.Create(FilePath(fileName));
                     rfc822.Message.WriteTo(stream);
                 }
@@ -93,20 +90,22 @@ namespace LLU.Android.Controllers
         }
         //Get Messages by using an existing client.
         //Disconnect on finish
-        public static List<MimeMessage>? GetMessages(string host, int port, string username, string password)
+        public static List<MimeMessage> GetMessages(string host, int port, string username, string password)
         {
             using ImapClient? client = Connect(host, port, username, password) ?? null;
             if (client == null)
-                return null;
-            var inbox = AccessInbox(client);
+                return new();
+            var inbox = AccessMessages(client);
             client.DisconnectAsync(true);
+            if (inbox == null) return new();
             return inbox;
         }
-        public static List<MimeMessage>? GetMessages(ImapClient? client)
+        public static List<MimeMessage> GetMessages(ImapClient client)
         {
 
-            var inbox = AccessInbox(client);
+            var inbox = AccessMessages(client);
             client.DisconnectAsync(true);
+            if(inbox == null) return new();
             return inbox;
         }
         public static bool DeleteMessages(string host, int port, string username, string password, List<string> Ids)
@@ -129,7 +128,7 @@ namespace LLU.Android.Controllers
             return true;
             
         }
-        public static List<MimeMessage>? AccessInbox(ImapClient client)
+        public static List<MimeMessage>? AccessMessages(ImapClient client)
         {
             List<MimeMessage> messages = new();
             var state = client.Inbox.Open(FolderAccess.ReadOnly);
@@ -154,8 +153,10 @@ namespace LLU.Android.Controllers
                 client.Authenticate(username, password);
                 return client;
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
+                Console.WriteLine(e);
+                Toast.MakeText(Application.Context,"Savienojums ar serveri neizdevās!",ToastLength.Short);
                 return null;
             }
         }

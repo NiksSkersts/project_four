@@ -124,7 +124,7 @@ namespace LLU.Android.Views
             if (_messages[num].Attachments != null)
                 intent.PutExtra("Attachments", true);
 
-            var filepaths = Controllers.Email.SaveAttachments(_messages[num]);
+            var filepaths = Controllers.EmailController.SaveAttachments(_messages[num]);
             if (filepaths != null)
                 intent.PutExtra("AttachmentLocationOnDevice", filepaths);
             StartActivity(intent);
