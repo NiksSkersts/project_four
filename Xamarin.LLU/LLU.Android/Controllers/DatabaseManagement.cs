@@ -1,6 +1,7 @@
 ﻿using LLU.Models;
 using MimeKit;
 using SQLite;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -47,17 +48,34 @@ namespace LLU.Android.Controllers
             return database.InsertOrReplaceAsync(row);
         }
         public int GetCurrentMessageCount() => database.Table<DatabaseData>().CountAsync().Result;
-        public bool CheckForChanges(string userID)
+        private string GetLatestMessageId() => database.Table<DatabaseData>().ElementAtAsync(0).Id.ToString();
+        public bool CheckForChanges(string userID, int count)
+            // Basic check for change. Compares the amount of messages in database and server.
+            // This is not as reliable as the extended check, but it should be quicker to check.
         {
-            var dataInDb = GetPresentEmail(userID);
-            var CurrentCount = GetCurrentMessageCount();
-            if (CurrentCount > dataInDb.Count || CurrentCount < dataInDb.Count)
+            var current = GetCurrentMessageCount();
+            if (current > count || current < count)
                 return true;
             return false;
         }
+        public bool CheckForChanges(string userID, string latestMessageID,int count)
+            // Extenstion of the basic check.
+            // This is for the situations where user has done modifications to the mailbox, yet the count remains the same.
+        {
+            var isChanged = CheckForChanges(userID, count);
+            if (!isChanged)
+                if(!latestMessageID.Equals(GetLatestMessageId()))
+                    return true;
+            return false;
+        }
         public int ApplyChanges(List<MimeMessage> data, string userID)
+            // Applies the changes from the server to the app database.
         {
             var count = 0;
+            // Security check. There's no point to go through all the messages if there have been no changes made in the server.
+            // If there's no changes. Return 0;
+            if(!CheckForChanges(userID, GetLatestMessageId(), GetCurrentMessageCount()))
+                return count;
             try
             {
                 foreach (var item in data)
@@ -79,9 +97,9 @@ namespace LLU.Android.Controllers
                         count += database.InsertAsync(datatemp).Result;
                 }
             }
-            catch
+            catch(Exception e)
             {
-                return count;
+                System.Console.WriteLine(e);
             }
             return count;
         }

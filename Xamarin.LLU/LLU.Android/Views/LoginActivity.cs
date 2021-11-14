@@ -17,8 +17,6 @@ namespace LLU.Android.Views
         Button loginButton;
         protected override void OnCreate(Bundle savedInstanceState)
         {
-            //Assumption is that later on in development, I will add more than one email user.
-            //If there's no data - request that user does login.
             var userdata = AccountManager.UserData;
         sec_check:
             if (userdata == null)
@@ -53,7 +51,7 @@ namespace LLU.Android.Views
         private void DoLogin(object sender, EventArgs e)
         {
             var temp = loginButton.Text;
-            loginButton.Text = "{ md_cached spin }";
+            loginButton.Text = "{ fa-cog spin }";
             //loginButton.Background = new JoanZapata.XamarinIconify.IconDrawable(Application.Context, JoanZapata.XamarinIconify.Fonts.MaterialIcons.md_cached);
 
             var attempt = AccountManager.Login(usernamefield.Text.ToString(), passwordfield.Text.ToString());

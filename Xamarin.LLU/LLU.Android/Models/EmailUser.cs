@@ -9,8 +9,11 @@ namespace LLU.Android.LLU.Models
 {
     public class EmailUser : User
     {
+        #region Imap Client
+        // WARNING: One should be careful with Disconnect(). It's advised to disconnect from the server to free up the socket, but one should not do it too often.
+        // LLU has some kind of security in place that blocks too many attempted Connect() requests - from this app and other third party apps like thunderbird.
+        // As far as I am aware, the suggestion is to disconnect on app exit or pause.
         protected ImapClient _client;
-        //WARNING: Client should be disconnected after being used!
         private ImapClient Client
         {
             get
@@ -27,30 +30,7 @@ namespace LLU.Android.LLU.Models
 
             }
         }
-        public bool IsAbleToConnect
-        {
-            get
-            {
-                try
-                {
-                    using var client = Client;
-                    if (client == null)
-                        return false;
-                    if (Client.IsConnected)
-                    {
-                        Client.DisconnectAsync(true);
-                        return true;
-                    }
-                    return false;
-                }
-                catch
-                {
-                    return false;
-                }
-
-            }
-        }
-
+        #endregion
         protected List<MimeMessage> _messages;
         private List<MimeMessage> Messages
         {
@@ -59,7 +39,7 @@ namespace LLU.Android.LLU.Models
                 DoItAgain:
                 if(_messages != null)
                 {
-                    var isChanged = Database.CheckForChanges(Userid);
+                    var isChanged = Database.CheckForChanges(Userid,_messages[0].MessageId,_messages.Count);
                     if (isChanged)
                     {
                         _messages = null;
@@ -75,32 +55,46 @@ namespace LLU.Android.LLU.Models
                     {
                         messages.Reverse();
                         Database.ApplyChanges(messages, Userid);
-                        client.DisconnectAsync(true);
                         _messages = messages;
                     }
                 }
                 return null;
             }
         }
-        //Gets and assigns secrets from deserialized json file, before the rest of the construction begins.
+        
         private EmailUser()
+            //Gets and assigns secrets from deserialized json file, before the rest of the construction begins.
         {
             Host = Secrets.MailServer;
             Port = Secrets.MailPort;
         }
 
-        //Constructor creates a new EmailUser from username and password
-        //It's used at times when app can't find any users in database
-        //Assumption remains that this constructor is used at first-launch of the application or when app fails to connect with using database data (credential change)
+        // Constructor creates a new EmailUser on app launch.
+        // Assumption remains that this constructor is used at first-launch of the application or when app fails to connect with using database data (credential change)
+        // WARNING: This does not validate connection. Validity should be done within LoginActivity and AccountManager.
+        // This class, for all intents and purposes, only is the middle layer between Database, Server and functionality.
         public EmailUser(string username, string password):this()
         {
             UserData userData = new();
             try
             {
-                //Remove the @llu.lv part, if the client added it.
-                var userid = username.Split('@')[0];
+                // WARNING: One should avoid validating by char count(). Not all LLU employees or students have matr.code;
+                // Notable examples are students who were employees of LLU first, before they begun to study.
+                string userid;
+
+                if (username.Contains('@'))
+                    //Remove the @llu.lv part, if the client added it.
+                    userid = username.Split('@')[0];
+                else
+                    userid = username;
+
                 userData.UserID = userid;
-                userData.Username = userid;
+
+                // WARNING: LLU only accepts username that contains the part before the @ (matr.code), while other email services accept either both or full username with domain.
+                if(username.ToLower().Contains("@llu.lv"))
+                    userData.Username = userid;
+                else
+                    userData.Username = username;
                 userData.Password = password;
             }
             catch (Exception e)
@@ -111,21 +105,17 @@ namespace LLU.Android.LLU.Models
             Username = userData.Username;
             Password = userData.Password;
         }
-
-        //Constructor gets user data from database at app start and builds cache from that.
-        public EmailUser(UserData data)
-        {
-            if (data != null)
-            {
-                Username = data.Username;
-                Password = data.Password;
-            }
-        }
         public string GetUserid() => Userid;
         public List<MimeMessage> GetMessages() => Messages;
         public void DeleteMessages(List<string> Uids)
         {
 
+        }
+        public ImapClient GetClient() => Client;
+        public void DisconnectClient()
+        {
+            if (Client.IsConnected)
+                Client.Disconnect(true);
         }
     }
 }

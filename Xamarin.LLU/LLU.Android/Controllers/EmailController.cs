@@ -15,7 +15,7 @@ namespace LLU.Android.Controllers
 {
     public abstract class EmailController
     {
-        public static string FilePath(string filename) => Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), filename);
+        public static string FilePath(string filename) => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), filename);
         public static void SaveMimePart(MimePart attachment, string fileName)
         {
             using var stream = File.Create(FilePath(fileName));
@@ -96,7 +96,6 @@ namespace LLU.Android.Controllers
             if (client == null)
                 return new();
             var inbox = AccessMessages(client);
-            client.DisconnectAsync(true);
             if (inbox == null) return new();
             return inbox;
         }
@@ -104,7 +103,6 @@ namespace LLU.Android.Controllers
         {
 
             var inbox = AccessMessages(client);
-            client.DisconnectAsync(true);
             if(inbox == null) return new();
             return inbox;
         }
