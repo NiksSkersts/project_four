@@ -17,52 +17,38 @@ namespace LLU.Android.Controllers
             database.CreateTableAsync<UserData>().Wait();
             database.CreateTableAsync<EmailIDs>().Wait();
             database.CreateTableAsync<EmailHistory>().Wait();
-            CleanupDatabase();
         }
-        private void CleanupDatabase()
+        public int WipeDatabase()
         {
-            //todo find a better way to get rid of empty entries;
-            //Textbox check mostlikely
-            var userdata = GetUserData();
-            foreach (var item in userdata.Result)
-            {
-                if (string.IsNullOrEmpty(item.Password) || string.IsNullOrEmpty(item.Username))
-                {
-                    Task<int> task = database.DeleteAsync<UserData>(item.UserID);
-                }
-            }
+            var sum = database.DeleteAllAsync<DatabaseData>().Result;
+            sum += database.DeleteAllAsync<UserData>().Result;
+            sum += database.DeleteAllAsync<EmailIDs>().Result;
+            sum += database.DeleteAllAsync<EmailHistory>().Result;
+            return sum;
         }
-        public Task<List<UserData>> GetUserData()
-        {
-            return database.Table<UserData>().ToListAsync();
-        }
-        public Task<List<DatabaseData>> GetEmailData()
-        {
-            return database.Table<DatabaseData>().ToListAsync();
-        }
+        public Task<UserData> GetUserData() => database.Table<UserData>().FirstOrDefaultAsync();
+        public Task<int> DropUserTable() => database.DeleteAllAsync<UserData>();
+        public Task<List<DatabaseData>> GetEmailData() => database.Table<DatabaseData>().ToListAsync();
         public List<string> GetPresentEmail(string userid)
         {
             var data = database.Table<EmailIDs>().ToListAsync();
             var idslist = new List<string>();
-            foreach(var id in data.Result)
+            foreach (var id in data.Result)
             {
                 if (id.UserID.Equals(userid))
                 {
                     idslist.Add(id.MessageID);
                 }
             }
-          
+
             return idslist;
         }
-        public void AddToHistory(int amount, string userid)
-        {
-            database.InsertOrReplaceAsync(new EmailHistory { UserID = userid, Emails = amount});
-        }
+        public void AddToHistory(int amount, string userid) => database.InsertOrReplaceAsync(new EmailHistory { UserID = userid, Emails = amount });
         public int GetEmailCount(string userid)
         {
             try
             {
-                var x =  database.Table<EmailHistory>()
+                var x = database.Table<EmailHistory>()
                     .Where(id => id.UserID.Equals(userid))
                     .FirstAsync()
                     .Result;
@@ -112,6 +98,12 @@ namespace LLU.Android.Controllers
             return true;
         }
         public Task<int> SaveUserAsync(UserData data) => database.InsertAsync(data, typeof(UserData));
+        public Task<int> DeleteMessage(string id)
+        {
+            var row = database.Table<DatabaseData>().Where(q => q.Id.Equals(id)).FirstOrDefaultAsync().Result;
+            row.DeleteFlag = true;
+            return database.InsertOrReplaceAsync(row);
+        }
 
     }
 }

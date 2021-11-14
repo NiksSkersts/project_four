@@ -1,5 +1,5 @@
-﻿using System;
-using SQLite;
+﻿using SQLite;
+using System;
 
 namespace LLU.Models
 {
@@ -13,6 +13,7 @@ namespace LLU.Models
         public string Subject { get; set; }
         public DateTimeOffset Time { get; set; }
         public string Body { get; set; }
+        public bool DeleteFlag { get; set; }
 
     }
     public class UserData

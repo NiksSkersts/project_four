@@ -1,11 +1,12 @@
-using MailKit.Net.Imap;
-using MimeKit;
-using System.Collections.Generic;
-using System.Linq;
 using MailKit;
+using MailKit.Net.Imap;
 using MailKit.Search;
 using MailKit.Security;
+using MimeKit;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 #nullable enable
 namespace LLU.Android.Controllers
@@ -14,44 +15,44 @@ namespace LLU.Android.Controllers
     {
         public static string FilePath(string filename) => Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), filename);
         public static void SaveMimePart(MimePart attachment, string fileName)
-		{
+        {
             using var stream = File.Create(FilePath(fileName));
             attachment.Content.DecodeTo(stream);
         }
 
-		public static void SaveMimePart(MessagePart attachment, string fileName)
-		{
+        public static void SaveMimePart(MessagePart attachment, string fileName)
+        {
             using var stream = File.Create(FilePath(fileName));
             attachment.Message.WriteTo(stream);
         }
 
-		public static string[]? SaveAttachments(MimeMessage message)
-		{
+        public static string[]? SaveAttachments(MimeMessage message)
+        {
             var attachmentcount = message.Attachments.Count();
             if (attachmentcount == 0)
                 return null;
 
             string[] filepaths = new string[attachmentcount];
             var i = 0;
-			foreach (var attachment in message.Attachments)
-			{
+            foreach (var attachment in message.Attachments)
+            {
                 var filepath = string.Empty;
                 if (attachment is MessagePart)
-				{
-					var fileName = attachment.ContentDisposition?.FileName;
-					var rfc822 = (MessagePart)attachment;
+                {
+                    var fileName = attachment.ContentDisposition?.FileName;
+                    var rfc822 = (MessagePart)attachment;
 
-					if (string.IsNullOrEmpty(fileName))
-						fileName = "attached-message.eml";
+                    if (string.IsNullOrEmpty(fileName))
+                        fileName = "attached-message.eml";
 
                     filepath = FilePath(fileName);
                     using var stream = File.Create(filepath);
                     rfc822.Message.WriteTo(stream);
                 }
-				else
-				{
-					var part = (MimePart)attachment;
-					var fileName = part.FileName;
+                else
+                {
+                    var part = (MimePart)attachment;
+                    var fileName = part.FileName;
 
                     filepath = FilePath(fileName);
                     using var stream = File.Create(filepath);
@@ -59,40 +60,40 @@ namespace LLU.Android.Controllers
                 }
                 filepaths[i] = filepath;
                 i++;
-			}
+            }
             return filepaths;
-		}
-		public static void SaveBodyParts(MimeMessage message)
-		{
-			foreach (var bodyPart in message.BodyParts)
-			{
-				if (!bodyPart.IsAttachment)
-					continue;
+        }
+        public static void SaveBodyParts(MimeMessage message)
+        {
+            foreach (var bodyPart in message.BodyParts)
+            {
+                if (!bodyPart.IsAttachment)
+                    continue;
 
-				if (bodyPart is MessagePart)
-				{
-					var fileName = bodyPart.ContentDisposition?.FileName;
-					var rfc822 = (MessagePart)bodyPart;
+                if (bodyPart is MessagePart)
+                {
+                    var fileName = bodyPart.ContentDisposition?.FileName;
+                    var rfc822 = (MessagePart)bodyPart;
 
-					if (string.IsNullOrEmpty(fileName))
-						fileName = "attached-message.eml";
+                    if (string.IsNullOrEmpty(fileName))
+                        fileName = "attached-message.eml";
 
                     using var stream = File.Create(FilePath(fileName));
                     rfc822.Message.WriteTo(stream);
                 }
-				else
-				{
-					var part = (MimePart)bodyPart;
-					var fileName = part.FileName;
+                else
+                {
+                    var part = (MimePart)bodyPart;
+                    var fileName = part.FileName;
 
                     using var stream = File.Create(FilePath(fileName));
                     part.Content.DecodeTo(stream);
                 }
-			}
-		}
-		//Get Messages by using an existing client.
-		//Disconnect on finish
-		public static List<MimeMessage>? GetMessages(string host, int port, string username, string password)
+            }
+        }
+        //Get Messages by using an existing client.
+        //Disconnect on finish
+        public static List<MimeMessage>? GetMessages(string host, int port, string username, string password)
         {
             using ImapClient? client = Connect(host, port, username, password) ?? null;
             if (client == null)
@@ -107,6 +108,26 @@ namespace LLU.Android.Controllers
             var inbox = AccessInbox(client);
             client.DisconnectAsync(true);
             return inbox;
+        }
+        public static bool DeleteMessages(string host, int port, string username, string password, List<string> Ids)
+        {
+            using var client = Connect(host, port, username, password);
+            if (client == null)
+                return false;
+            try
+            {
+                foreach (var id in Ids)
+                {
+                    client.Inbox.AddFlagsAsync(UniqueId.Parse(id), MessageFlags.Deleted, true);
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e);
+                return false;
+            }
+            return true;
+            
         }
         public static List<MimeMessage>? AccessInbox(ImapClient client)
         {
@@ -125,7 +146,7 @@ namespace LLU.Android.Controllers
         //Instead of crashing the app on failure, give out null, to implement safeguards and fallbacks in-app code. 
         public static ImapClient? Connect(string host, int port, string username, string password)
         {
-            var client = new ImapClient ();
+            var client = new ImapClient();
             try
             {
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;

@@ -1,89 +1,108 @@
-using System;
-using System.Collections.Generic;
-using LLU.Android.Controllers;
+﻿using LLU.Android.Controllers;
 using LLU.Models;
 using MailKit.Net.Imap;
 using MimeKit;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 #nullable enable
 namespace LLU.Android.LLU.Models
 {
-    public class EmailUser
+    public class EmailUser : User
     {
-        readonly DatabaseManagement db = MainActivity.Database;
-        //DISCLAIMER: this data is publicly available for everyone to see.
-        private readonly string host = "mail.llu.lv";
-        private readonly int port = 993;
-        //END OF DISCLAIMER
+        protected ImapClient? _client;
+        //WARNING: Client should be disconnected after being used!
+        private ImapClient? Client
+        {
+            get
+            {
+                if (_client == null)
+                {
+                    var client = Email.Connect(Host, Port, Username, Password);
+                    if (client != null)
+                        _client = client;
+                    else
+                        return null;
+                }
+                return _client;
 
-        protected readonly string username = string.Empty;
-        protected readonly string password = string.Empty;
-        protected List<MimeMessage> _messages = new();
+            }
+        }
+
+        protected List<MimeMessage> _messages;
+        private List<MimeMessage> Messages
+        {
+            get
+            {
+                if (_messages == null)
+                {
+                    using var client = Client;
+                    if (client == null)
+                        return new();
+                    _messages = Email.GetMessages(client);
+                    if (_messages == null)
+                    {
+                        _messages = new();
+                    }else
+                    {
+                        _messages?.Reverse();
+                        client.DisconnectAsync(true);
+                       
+                    }
+                }
+                else
+                {
+                    return _messages;
+                }
+                return new();
+            }
+        }
 
         //Constructor creates a new EmailUser from username and password
         //It's used at times when app can't find any users in database
         //Assumption remains that this constructor is used at first-launch of the application or when app fails to connect with using database data (credential change)
         public EmailUser(string username, string password)
         {
-            this.username = username;
-            this.password = password;
-            var imapClient = Email.Connect(host, port, this.username, this.password);
-            if(imapClient!= null)
+            UserData userData = new();
+            try
             {
-                GetMessages(imapClient);
-                UserData userData = new();
-                try
-                {
-                    var userid = this.username.Split('@')[0];
-                    userData.UserID =userid;
-                    userData.Username = this.username;
-                    userData.Password = this.password;
-                    _ = db.SaveUserAsync(userData).Result;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                }
-                SaveMessagesToDB(userData);
+                //Remove the @llu.lv part, if the client added it, just in case.
+                var userid = username.Split('@')[0];
+                userData.UserID = userid;
+                userData.Username = userid;
+                userData.Password = password;
+                _ = Database.SaveUserAsync(userData).Result;
             }
-            else
+            catch (Exception e)
             {
-                //todo add safeguard on client == null
+                Console.WriteLine(e);
             }
+            Userid = userData.UserID;
+            Username = userData.Username;
+            Password = userData.Password;
+            if (Messages != null)
+                SaveMessagesToDB(Messages, userData);
         }
 
         //Constructor gets user data from database at app start and builds cache from that.
         public EmailUser()
         {
-            var data = db.GetUserData().Result;
-            if (data!=null)
+            var data = AccountManager.UserData;
+            if (data != null)
             {
-                this.username = data[0].Username;
-                this.password = data[0].Password;
+                Username = data.Username;
+                Password = data.Password;
+                if (Messages != null)
+                    SaveMessagesToDB(Messages, data);
             }
-            var client = Email.Connect(host, port, username, password);
-            if(client != null)
-            {
-                GetMessages(client);
-                SaveMessagesToDB(data[0]);
-            }
-            return;
         }
-        private void GetMessages(ImapClient? client)
+        private void SaveMessagesToDB(List<MimeMessage> messages, UserData userdata) => Database.SaveAllEmailAsync(messages, userdata.UserID);
+        public string GetUserid() => Userid;
+        public List<MimeMessage> GetMessages() => Messages;
+        public void DeleteMessages(List<string> Uids)
         {
-            if (client != null)
-                _messages = Email.GetMessages(client);
-            else _messages = Email.GetMessages(host, port, username, password);
 
-            _messages?.Reverse();
-        }
-        private void SaveMessagesToDB(UserData userdata) => db.SaveAllEmailAsync(_messages, userdata.UserID);
-        public List<MimeMessage>? ReturnMessages()
-        {
-            if (_messages.Count == 0 || _messages == null)
-                return null;
-            else
-                return _messages;
         }
     }
 }

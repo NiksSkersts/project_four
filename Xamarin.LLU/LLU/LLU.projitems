@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Models\DatabaseData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\User.cs" />
     <None Include="$(MSBuildThisFileDirectory)ScratchPad.cs" />
   </ItemGroup>
   <ItemGroup>

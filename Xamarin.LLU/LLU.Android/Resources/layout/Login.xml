@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:gravity="top">
     <TextView
         android:text="@string/login"
         android:textAppearance="?android:attr/textAppearanceLarge"
@@ -21,14 +23,14 @@
         android:id="@+id/usernamefield"
         android:inputType="text"
         android:layout_margin="50px"
-        android:hint="Matrikulas Kods" />
+        android:hint="@string/matr" />
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/passwordfield"
         android:inputType="textPassword"
         android:layout_margin="50px"
-        android:hint="Parole" />
+        android:hint="@string/password" />
     <Button
         android:text="@string/login_button"
         android:layout_width="match_parent"

@@ -1,9 +1,6 @@
 ﻿using Android.App;
 using Android.Content;
-using Android.Graphics;
-using Android.Graphics.Drawables;
 using Android.OS;
-using Android.Views;
 using Android.Webkit;
 using Android.Widget;
 using AndroidX.RecyclerView.Widget;
@@ -11,8 +8,6 @@ using JoanZapata.XamarinIconify;
 using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
 using System.Collections.Generic;
-using System.Linq;
-using Xamarin.Essentials;
 
 namespace LLU.Android
 {
@@ -20,36 +15,37 @@ namespace LLU.Android
     public class EmailBody : Activity
     {
         private Dictionary<string, string> data = null;
-        private Dictionary<string,string> AttachmentData {
+        private Dictionary<string, string> AttachmentData
+        {
             get
             {
-                if(data!=null)
+                if (data != null)
                     return data;
 
                 var filepaths = IntentAttachments;
                 if (filepaths == null)
                     return new();
-                var names = new Dictionary<string,string>();
+                var names = new Dictionary<string, string>();
                 foreach (var path in filepaths)
                 {
                     var name = path.Split('/');
-                    names.Add(name[name.Length-1], path);
+                    names.Add(name[^1], path);
                 }
                 data = names;
                 return names;
             }
         }
-        private string[] IntentAttachments 
-        { 
+        private string[] IntentAttachments
+        {
             get
             {
                 var attachmentsavailable = Intent.Extras.GetBoolean("Attachments");
-                if (Intent.Extras!=null && attachmentsavailable)
+                if (Intent.Extras != null && attachmentsavailable)
                 {
                     return Intent.Extras.GetStringArray("AttachmentLocationOnDevice");
                 }
                 return null;
-            } 
+            }
         }
         public TextView Subject { get; set; }
         public LinearLayout MainLayout { get; set; }
@@ -57,11 +53,15 @@ namespace LLU.Android
         public TextView From { get; set; }
         public TextView To { get; set; }
         public WebView Body { get; set; }
+        public ImageButton BackButton { get; set; }
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.EmailBody);
 
+            //BackButton = FindViewById<ImageButton>(Resource.Id.backbutton);
+            //BackButton.SetImageDrawable(new IconDrawable(this, MaterialIcons.md_arrow_back.ToString()));
+            //BackButton.Click += BackButtonClick;
             //Bind various views to their XAML counterparts. Create events and deal with intent extras that I specified in EmailActivity.cs
             MainLayout = FindViewById<LinearLayout>(Resource.Id.EmailMainLayout);
             Subject = FindViewById<TextView>(Resource.Id.EB_Subject);
@@ -95,7 +95,11 @@ namespace LLU.Android
                 AttachmentFrame.SetLayoutManager(layoutmanager);
                 MainLayout.AddView(AttachmentFrame);
             }
-            //MainLayout.AddView(Body);
+        }
+
+        private void BackButtonClick(object sender, System.EventArgs e)
+        {
+            OnBackPressed();
         }
     }
 }

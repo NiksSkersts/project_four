@@ -1,16 +1,18 @@
 ﻿using Android.App;
 using Android.Content;
 using Android.Graphics;
-using Android.Net;
 using Android.OS;
 using Android.Widget;
 using AndroidX.RecyclerView.Widget;
+using JoanZapata.XamarinIconify;
+using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
+using LLU.Android.LLU.Models;
+using LLU.Models;
 using MimeKit;
+using System;
 using System.Collections.Generic;
 using Xamarin.Essentials;
-using System.IO;
-using System;
 
 #nullable enable
 namespace LLU.Android.Views
@@ -18,6 +20,11 @@ namespace LLU.Android.Views
     [Activity(Label = "EmailActivity")]
     public class EmailActivity : Activity
     {
+        List<int> SelectedMessages = new();
+        Button Seen;
+        Button SeenAll;
+        Button Delete;
+        Button DeleteAll;
         private RecyclerView _recyclerView = new(Application.Context);
         private RecyclerView.LayoutManager mLayoutManager;
         private EmailsViewAdapter adapter;
@@ -25,17 +32,30 @@ namespace LLU.Android.Views
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+            Platform.Init(this, savedInstanceState);
+            Iconify.With(new MaterialModule());
             var mainDisplayInfo = DeviceDisplay.MainDisplayInfo;
-            _messages = MainActivity.EmailUserData.ReturnMessages();
+            _messages = EmailUser.EmailUserData.GetMessages();
 
             //create a new instance of _messages to prevent adapter from crashing
             if (_messages == null)
                 _messages = new List<MimeMessage>();
-            SetContentView(Resource.Layout.Main);
+            SetContentView(Resource.Layout.EmailActivity);
+
+
+            Seen = FindViewById<Button>(Resource.Id.ToolbarMainSeen);
+            SeenAll = FindViewById<Button>(Resource.Id.ToolbarMainSeenAll);
+            Delete = FindViewById<Button>(Resource.Id.ToolbarMainDelete);
+            DeleteAll = FindViewById<Button>(Resource.Id.ToolbarMainDeleteAll);
+            Seen.Click += ExecuteSeen;
+            SeenAll.Click += ExecuteSeenAll;
+            Delete.Click += ExecuteDelete;
+            DeleteAll.Click += ExecuteDeleteAll;
 
             //Initialize adapter
             adapter = new EmailsViewAdapter(_messages);
             adapter.ItemClick += OnItemClick;
+            adapter.ItemLongClick += OnItemLongClick;
 
             //Initialize Recyclerview for listing emails
             LinearLayout layout = FindViewById<LinearLayout>(Resource.Id.mainLayout);
@@ -48,7 +68,42 @@ namespace LLU.Android.Views
             mLayoutManager = new LinearLayoutManager(Application.Context);
             _recyclerView.SetLayoutManager(mLayoutManager);
             layout?.AddView(_recyclerView);
+           
         }
+
+        private void OnItemLongClick(object sender, int e)
+        {
+            SelectedMessages.Add(e);
+        }
+        private void ExecuteDeleteAll(object sender, EventArgs e)
+        {
+            List<string> uids = new();
+            foreach(var message in _messages)
+            {
+                uids.Add(message.MessageId);
+            }
+            EmailUser.EmailUserData.DeleteMessages(uids);
+            _messages.Clear();
+        }
+        private void ExecuteDelete(object sender, EventArgs e)
+        {
+            List<string> uids = new();
+            foreach (var position in SelectedMessages)
+            {
+                uids.Add(_messages[position].MessageId); 
+            }
+            EmailUser.EmailUserData.DeleteMessages(uids);
+        }
+
+        private void ExecuteSeen(object sender, System.EventArgs e)
+        {
+
+        }
+        private void ExecuteSeenAll(object sender, System.EventArgs e)
+        {
+
+        }
+
         private void OnItemClick(object sender, int position)
         {
             //Create an intent to launch a new activity.
@@ -59,15 +114,15 @@ namespace LLU.Android.Views
             var htmlbody = _messages[num].HtmlBody;
             intent.PutExtra("PositionInDb", num);
 
-            if (htmlbody!= null)
-                intent.PutExtra("Body", new string[2] { _messages[num].HtmlBody,"html" });
-            else intent.PutExtra("Body", new string[2] { _messages[num].TextBody, "txt"});
+            if (htmlbody != null)
+                intent.PutExtra("Body", new string[2] { _messages[num].HtmlBody, "html" });
+            else intent.PutExtra("Body", new string[2] { _messages[num].TextBody, "txt" });
 
             intent.PutExtra("From", _messages[num].From.ToString());
             intent.PutExtra("To", _messages[num].To.ToString());
             intent.PutExtra("Subject", _messages[num].Subject);
-            if (_messages[num].Attachments!=null)
-                intent.PutExtra("Attachments",true);
+            if (_messages[num].Attachments != null)
+                intent.PutExtra("Attachments", true);
 
             var filepaths = Controllers.Email.SaveAttachments(_messages[num]);
             if (filepaths != null)

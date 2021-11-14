@@ -1,11 +1,11 @@
-﻿using AndroidX.RecyclerView.Widget;
-using Android.Views;
+﻿using Android.Views;
+using Android.Widget;
+using AndroidX.RecyclerView.Widget;
+using LLU.Android.LLU.Models;
 using System;
 using System.Collections.Generic;
-using LLU.Android.LLU.Models;
-using Android.Widget;
-using Xamarin.Essentials;
 using System.Linq;
+using Xamarin.Essentials;
 
 namespace LLU.Android.Controllers
 {
