@@ -31,16 +31,8 @@ namespace LLU.Android.Views
             Platform.Init(this, savedInstanceState);
             Iconify.With(new MaterialModule());
             SetContentView(Resource.Layout.EmailActivity);
-            Button Seen = FindViewById<Button>(Resource.Id.ToolbarMainSeen);
-            Button SeenAll = FindViewById<Button>(Resource.Id.ToolbarMainSeenAll);
-            Button Delete = FindViewById<Button>(Resource.Id.ToolbarMainDelete);
-            Button DeleteAll = FindViewById<Button>(Resource.Id.ToolbarMainDeleteAll);
-            Seen.Click += ExecuteSeen;
-            SeenAll.Click += ExecuteSeenAll;
-            Delete.Click += ExecuteDelete;
-            DeleteAll.Click += ExecuteDeleteAll;
         }
-        protected override void OnPostCreate(Bundle? savedInstanceState)
+        protected override void OnPostCreate(Bundle savedInstanceState)
         {
             base.OnPostCreate(savedInstanceState);
 
@@ -48,6 +40,7 @@ namespace LLU.Android.Views
             //create a new instance of _messages to prevent adapter from crashing
             if (_messages == null)
                 _messages = new List<MimeMessage>();
+
 
             //Initialize adapter
             adapter = new EmailsViewAdapter(_messages);
@@ -62,9 +55,19 @@ namespace LLU.Android.Views
             _recyclerView.SetAdapter(adapter);
 
             // Plug in the linear layout manager:
-            mLayoutManager = new LinearLayoutManager(Application.Context);
+            mLayoutManager = new LinearLayoutManager(this);
             _recyclerView.SetLayoutManager(mLayoutManager);
-            layout?.AddView(_recyclerView);
+            layout.AddView(_recyclerView);
+        }
+        protected override void OnStop()
+        {
+            base.OnStop();
+            EmailUser.EmailUserData.Disconnect();
+            Finish();
+        }
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
         }
         private void OnItemLongClick(object sender, int e)
         {
@@ -77,7 +80,7 @@ namespace LLU.Android.Views
             {
                 uids.Add(message.MessageId);
             }
-            EmailUser.EmailUserData.DeleteMessages(uids);
+            //EmailUser.EmailUserData.DeleteMessages(uids);
             _messages.Clear();
         }
         private void ExecuteDelete(object sender, EventArgs e)
@@ -85,9 +88,10 @@ namespace LLU.Android.Views
             List<string> uids = new();
             foreach (var position in SelectedMessages)
             {
-                uids.Add(_messages[position].MessageId); 
+                uids.Add(_messages[position].MessageId);
+                SelectedMessages.Remove(position);
             }
-            EmailUser.EmailUserData.DeleteMessages(uids);
+            //EmailUser.EmailUserData.DeleteMessages(uids);
         }
 
         private void ExecuteSeen(object sender, System.EventArgs e)
@@ -119,7 +123,7 @@ namespace LLU.Android.Views
             if (_messages[num].Attachments != null)
                 intent.PutExtra("Attachments", true);
 
-            var filepaths = EmailController.SaveAttachments(_messages[num]);
+            var filepaths = DataController.SaveAttachments(_messages[num]);
             if (filepaths != null)
                 intent.PutExtra("AttachmentLocationOnDevice", filepaths);
             StartActivity(intent);

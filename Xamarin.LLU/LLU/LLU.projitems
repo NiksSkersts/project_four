@@ -11,11 +11,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Models\DatabaseData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Secrets.cs" />
-    <None Include="$(MSBuildThisFileDirectory)Models\secrets">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <Resource Include="$(MSBuildThisFileDirectory)Models\secrets" />
-    <Resource Include="$(MSBuildThisFileDirectory)Models\Secrets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\User.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Compile>
@@ -25,10 +20,5 @@
     <None Include="$(MSBuildThisFileDirectory)Models\data">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="$(MSBuildThisFileDirectory)Models\secrets">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
   </ItemGroup>
 </Project>

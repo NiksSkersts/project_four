@@ -15,7 +15,7 @@
     <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
     <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
     <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
-    <LangVersion>9</LangVersion>
+    <LangVersion>10</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -55,11 +55,12 @@
     <Reference Include="Mono.Android" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Controllers\AccountManager.cs" />
-    <Compile Include="Controllers\DatabaseManagement.cs" />
-    <Compile Include="Controllers\AttachmentViewAdapter.cs" />
+    <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Controllers\DatabaseController.cs" />
+    <Compile Include="Models\AttachmentViewAdapter.cs" />
+    <Compile Include="Controllers\DataController.cs" />
     <Compile Include="Controllers\EmailController.cs" />
-    <Compile Include="Controllers\EmailsViewAdapter.cs" />
+    <Compile Include="Models\EmailsViewAdapter.cs" />
     <Compile Include="Controllers\MessagingManager.cs" />
     <Compile Include="Models\AttachmentViewHolder.cs" />
     <Compile Include="Models\EmailsViewHolder.cs" />

@@ -10,17 +10,17 @@ namespace LLU.Models
 {
     public abstract class User
     {
-        static DatabaseManagement database;
+        static DatabaseController database;
 
         //Getter for database connection. if null  = create a new connection
         //Backend uses SQLITE database that is integrated within the application
-        public static DatabaseManagement Database
+        public static DatabaseController Database
         {
             get
             {
                 if (database == null)
                 {
-                    database = new DatabaseManagement(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "data"));
+                    database = new DatabaseController(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "data"));
                 }
                 return database;
             }
@@ -43,9 +43,7 @@ namespace LLU.Models
         }
         protected string Host { get; set; }
         protected int Port { get; set; }
-        protected string Userid { get; set; }
-        protected string Username { get; set; }
-        protected string Password { get; set; }
+        protected UserData UserData { get; set; }
 
         //Stores temporary data that gets deleted when the application terminates.
         //WARNING: all permanent data gets stored within the database!

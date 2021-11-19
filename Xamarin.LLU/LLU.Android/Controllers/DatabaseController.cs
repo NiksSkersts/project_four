@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 #nullable enable
 namespace LLU.Android.Controllers
 {
-    public class DatabaseManagement
+    public class DatabaseController
     {
         readonly SQLiteAsyncConnection database;
-        public DatabaseManagement(string DbPath)
+        public DatabaseController(string DbPath)
         {
             database = new SQLiteAsyncConnection(DbPath);
             database.CreateTableAsync<DatabaseData>().Wait();
@@ -73,7 +73,6 @@ namespace LLU.Android.Controllers
         {
             var count = 0;
             // Security check. There's no point to go through all the messages if there have been no changes made in the server.
-            // If there's no changes. Return 0;
             if(!CheckForChanges(userID, GetLatestMessageId(), GetCurrentMessageCount()))
                 return count;
             try

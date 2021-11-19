@@ -15,102 +15,48 @@ namespace LLU.Android.Controllers
 {
     public abstract class EmailController
     {
-        public static string FilePath(string filename) => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), filename);
-        public static void SaveMimePart(MimePart attachment, string fileName)
+        //Create a new connection with the server.
+        //Authentificate and return the client.
+        //Instead of crashing the app on failure, give out null, to implement safeguards and fallbacks in-app code. 
+        public static Tuple<byte,ImapClient> Connect(string host, int port)
         {
-            using var stream = File.Create(FilePath(fileName));
-            attachment.Content.DecodeTo(stream);
-        }
+            // Quick intro into resultCode:
+            // 0 - All good
+            // 1 - Client connection failed
+            // 2 - Auth failed
 
-        public static void SaveMimePart(MessagePart attachment, string fileName)
-        {
-            using var stream = File.Create(FilePath(fileName));
-            attachment.Message.WriteTo(stream);
-        }
-
-        public static string[]? SaveAttachments(MimeMessage message)
-        {
-            var attachmentcount = message.Attachments.Count();
-            if (attachmentcount == 0)
-                return null;
-
-            string[] filepaths = new string[attachmentcount];
-            var i = 0;
-            foreach (var attachment in message.Attachments)
+            var client = new ImapClient();
+            byte resultCode= 0;
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+            try
             {
-                var filepath = string.Empty;
-                if (attachment is MessagePart part1)
-                {
-                    var fileName = attachment.ContentDisposition?.FileName;
-                    var rfc822 = part1;
-                    if (string.IsNullOrEmpty(fileName))
-                        fileName = "attached-message.eml";
-                    filepath = FilePath(fileName);
-                    using var stream = File.Create(filepath);
-                    rfc822.Message.WriteTo(stream);
-                }
-                else
-                {
-                    var part = (MimePart)attachment;
-                    var fileName = part.FileName;
-                    filepath = FilePath(fileName);
-                    using var stream = File.Create(filepath);
-                    part.Content.DecodeTo(stream);
-                }
-                filepaths[i] = filepath;
-                i++;
+                client.Connect(host, port, SecureSocketOptions.Auto);
             }
-            return filepaths;
-        }
-        public static void SaveBodyParts(MimeMessage message)
-        {
-            foreach (var bodyPart in message.BodyParts)
+            catch (Exception e)
             {
-                if (!bodyPart.IsAttachment)
-                    continue;
-
-                if (bodyPart is MessagePart part1)
-                {
-                    var fileName = bodyPart.ContentDisposition?.FileName;
-                    var rfc822 = part1;
-                    if (string.IsNullOrEmpty(fileName))
-                        fileName = "attached-message.eml";
-                    using var stream = File.Create(FilePath(fileName));
-                    rfc822.Message.WriteTo(stream);
-                }
-                else
-                {
-                    var part = (MimePart)bodyPart;
-                    var fileName = part.FileName;
-
-                    using var stream = File.Create(FilePath(fileName));
-                    part.Content.DecodeTo(stream);
-                }
+                Console.WriteLine(e);
+                resultCode = 1;
             }
+            return Tuple.Create(resultCode, client);
         }
-        //Get Messages by using an existing client.
-        //Disconnect on finish
-        public static List<MimeMessage> GetMessages(string host, int port, string username, string password)
+        // Disconnecting just because user inputted wrong credentials is a waste of resources, and can get you banned from the server for a period of time.
+        // Keep connection with the server, but try auth again instead.
+        public static bool ClientAuth(ImapClient client, string username, string password)
         {
-            using ImapClient? client = Connect(host, port, username, password) ?? null;
-            if (client == null)
-                return new();
-            var inbox = AccessMessages(client);
-            if (inbox == null) return new();
-            return inbox;
-        }
-        public static List<MimeMessage> GetMessages(ImapClient client)
-        {
-
-            var inbox = AccessMessages(client);
-            if(inbox == null) return new();
-            return inbox;
-        }
-        public static bool DeleteMessages(string host, int port, string username, string password, List<string> Ids)
-        {
-            using var client = Connect(host, port, username, password);
-            if (client == null)
+            try
+            {
+                client.Authenticate(username, password);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
                 return false;
+            }
+
+        }
+        public static bool DeleteMessages(ImapClient client, List<string> Ids)
+        {
             try
             {
                 foreach (var id in Ids)
@@ -118,13 +64,19 @@ namespace LLU.Android.Controllers
                     client.Inbox.AddFlagsAsync(UniqueId.Parse(id), MessageFlags.Deleted, true);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e);
                 return false;
             }
             return true;
-            
+
+        }
+        public static List<MimeMessage> GetMessages(ImapClient client)
+        {
+            var inbox = AccessMessages(client);
+            if(inbox == null) return new();
+            return inbox;
         }
         public static List<MimeMessage>? AccessMessages(ImapClient client)
         {
@@ -137,26 +89,19 @@ namespace LLU.Android.Controllers
             }
             return messages;
         }
-
-        //Create a new connection with the server.
-        //Authentificate and return the client.
-        //Instead of crashing the app on failure, give out null, to implement safeguards and fallbacks in-app code. 
-        public static ImapClient? Connect(string host, int port, string username, string password)
+        public static bool DisconnectFromServer(ImapClient client)
         {
-            var client = new ImapClient();
             try
             {
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-                client.Connect(host, port, SecureSocketOptions.Auto);
-                client.Authenticate(username, password);
-                return client;
+                client.Disconnect(true);
+                client.Dispose();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                Toast.MakeText(Application.Context,"Savienojums ar serveri neizdevās!",ToastLength.Short);
-                return null;
+                return false;
             }
+            return true;
         }
     }
 }
