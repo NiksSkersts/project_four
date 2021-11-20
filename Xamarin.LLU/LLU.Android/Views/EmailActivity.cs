@@ -2,8 +2,12 @@
 using Android.Content;
 using Android.Graphics;
 using Android.OS;
+using Android.Views;
 using Android.Widget;
+using AndroidX.AppCompat.App;
+using AndroidX.DrawerLayout.Widget;
 using AndroidX.RecyclerView.Widget;
+using Google.Android.Material.Navigation;
 using JoanZapata.XamarinIconify;
 using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
@@ -13,6 +17,8 @@ using MimeKit;
 using System;
 using System.Collections.Generic;
 using Xamarin.Essentials;
+using static Android.Views.GestureDetector;
+using static Android.Views.View;
 
 namespace LLU.Android.Views
 {
@@ -24,14 +30,40 @@ namespace LLU.Android.Views
         private RecyclerView.LayoutManager mLayoutManager;
         private EmailsViewAdapter adapter;
         private List<MimeMessage> _messages = new();
+        private DrawerLayout drawerLayout;
+        private NavigationView navigationView;
+        private Button ExitButton;
+        private ImageButton HamburgerMenu;
         DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
+        // todo fix xiconify
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
             Platform.Init(this, savedInstanceState);
             Iconify.With(new MaterialModule());
             SetContentView(Resource.Layout.EmailActivity);
+            var toolbar = FindViewById<Toolbar>(Resource.Id.NavToolbar);
+            HamburgerMenu = FindViewById<ImageButton>(Resource.Id.HamburgerButton);
+            var ExitButton = FindViewById<Button>(Resource.Id.LogoutButton); 
+            HamburgerMenu.SetImageDrawable(new IconDrawable(this, MaterialIcons.md_menu.ToString()));
+            drawerLayout = FindViewById<DrawerLayout>(Resource.Id.EmailDrawer);
+            navigationView = FindViewById<NavigationView>(Resource.Id.nav_view);
+            HamburgerMenu.Click += MenuClick;
         }
+
+        private void MenuClick(object sender, EventArgs e)
+        {
+            if (!drawerLayout.IsOpen)
+            {
+                drawerLayout.Open();
+
+            }
+            else
+            {
+                drawerLayout.Close();
+            }
+        }
+
         protected override void OnPostCreate(Bundle savedInstanceState)
         {
             base.OnPostCreate(savedInstanceState);

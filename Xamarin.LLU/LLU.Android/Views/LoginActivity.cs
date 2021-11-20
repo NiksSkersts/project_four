@@ -5,19 +5,33 @@ using Android.Widget;
 using LLU.Android.Controllers;
 using LLU.Models;
 using System;
+using Android.Views;
+using Xamarin.Essentials;
 
 namespace LLU.Android.Views
 {
-    [Activity(Label = "Login", MainLauncher = true)]
+    [Activity(Label = "LLU e-pasts", MainLauncher = true)]
     public class LoginActivity : Activity
     {
 
         EditText usernamefield;
         EditText passwordfield;
         Button loginButton;
+        TextView loading;
+        LinearLayout layout;
+        TextView loginText;
         protected override void OnCreate(Bundle savedInstanceState)
         {
+
             base.OnCreate(savedInstanceState);
+            SetContentView(Resource.Layout.Login);
+            layout = FindViewById<LinearLayout>(Resource.Id.mainLoginLayout);
+            loading = new(this);
+            loading.TextAlignment = TextAlignment.Center;
+            loading.SetHeight((int)DeviceDisplay.MainDisplayInfo.Height);
+            loading.SetWidth((int)DeviceDisplay.MainDisplayInfo.Width);
+            loading.Text = "{md_cached sin}";
+            layout.AddView(loading);
             // On creation - activity attempts to find the previous login info from the database and attempts to login using that.
             // Failure returns an error code. Server not available or wrong credentials.
             // On "Server not available", application warns user to try again later, and loads local data meanwhile.
@@ -27,7 +41,8 @@ namespace LLU.Android.Views
         sec_check:
             if (userdata == null)
             {
-                SetContentView(Resource.Layout.Login);
+                layout.RemoveView(loading);
+                loginText = FindViewById<TextView>(Resource.Id.loginText);
                 usernamefield = FindViewById<EditText>(Resource.Id.usernamefield);
                 passwordfield = FindViewById<EditText>(Resource.Id.passwordfield);
                 loginButton = FindViewById<Button>(Resource.Id.loginButton);
@@ -67,6 +82,8 @@ namespace LLU.Android.Views
 
         private void DoLogin(object sender, EventArgs e)
         {
+            layout.RemoveAllViews();
+            layout.AddView(loading);
             var temp = loginButton.Text;
             loginButton.Text = "{ fa-cog spin }";
             //loginButton.Background = new JoanZapata.XamarinIconify.IconDrawable(Application.Context, JoanZapata.XamarinIconify.Fonts.MaterialIcons.md_cached);
@@ -81,6 +98,11 @@ namespace LLU.Android.Views
             else if( attempt == 2)
                 MessagingController.AuthentificationError();
             loginButton.Text = temp;
+            layout.RemoveAllViews();
+            layout.AddView(loginText);
+            layout.AddView(usernamefield);
+            layout.AddView(passwordfield);
+            layout.AddView(loginButton);
 
         }
     }

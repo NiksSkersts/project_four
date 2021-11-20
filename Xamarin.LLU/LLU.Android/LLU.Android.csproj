@@ -57,11 +57,12 @@
   <ItemGroup>
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\DatabaseController.cs" />
+    <Compile Include="Main.cs" />
     <Compile Include="Models\AttachmentViewAdapter.cs" />
     <Compile Include="Controllers\DataController.cs" />
     <Compile Include="Controllers\EmailController.cs" />
     <Compile Include="Models\EmailsViewAdapter.cs" />
-    <Compile Include="Controllers\MessagingManager.cs" />
+    <Compile Include="Controllers\MessagingController.cs" />
     <Compile Include="Models\AttachmentViewHolder.cs" />
     <Compile Include="Models\EmailsViewHolder.cs" />
     <Compile Include="Views\EmailActivity.cs" />
