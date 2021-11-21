@@ -13,13 +13,20 @@ namespace LLU.Android.Views
     [Activity(Label = "LLU e-pasts", MainLauncher = true)]
     public class LoginActivity : Activity
     {
-
+        #region Declaration
         EditText usernamefield;
         EditText passwordfield;
         Button loginButton;
         TextView loading;
         LinearLayout layout;
         TextView loginText;
+        #endregion
+
+        // On creation - activity attempts to find the previous login info from the database and attempts to login using that.
+        // Failure returns an error code. Server not available or wrong credentials.
+        // On "Server not available", application warns user to try again later, and loads local data meanwhile.
+        // On "Wrong credentials", application wipes data in the database and goes through the first login process again.
+        // On first login app asks for crdentials and attempts login at button press.
         protected override void OnCreate(Bundle savedInstanceState)
         {
 
@@ -30,13 +37,9 @@ namespace LLU.Android.Views
             loading.TextAlignment = TextAlignment.Center;
             loading.SetHeight((int)DeviceDisplay.MainDisplayInfo.Height);
             loading.SetWidth((int)DeviceDisplay.MainDisplayInfo.Width);
-            loading.Text = "{md_cached sin}";
+            loading.Text = "{md_cached spin}";
             layout.AddView(loading);
-            // On creation - activity attempts to find the previous login info from the database and attempts to login using that.
-            // Failure returns an error code. Server not available or wrong credentials.
-            // On "Server not available", application warns user to try again later, and loads local data meanwhile.
-            // On "Wrong credentials", application wipes data in the database and goes through the first login process again.
-            // On first login app asks for crdentials and attempts login at button press.
+
             var userdata = AccountController.UserData;
         sec_check:
             if (userdata == null)
@@ -57,7 +60,6 @@ namespace LLU.Android.Views
                     if (attempt == 1)
                     {
                         MessagingController.ShowConnnectionError();
-                        StartEmailActivity();
                     }
                     if (attempt == 2)
                     {
@@ -67,10 +69,7 @@ namespace LLU.Android.Views
                         goto sec_check;
                     }
                 }
-                else
-                {
-                    StartEmailActivity();
-                }
+                StartEmailActivity();
             }
         }
         private void StartEmailActivity()
@@ -97,6 +96,7 @@ namespace LLU.Android.Views
                 MessagingController.ShowConnnectionError();
             else if( attempt == 2)
                 MessagingController.AuthentificationError();
+
             loginButton.Text = temp;
             layout.RemoveAllViews();
             layout.AddView(loginText);

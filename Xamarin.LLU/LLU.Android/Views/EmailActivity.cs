@@ -2,9 +2,7 @@
 using Android.Content;
 using Android.Graphics;
 using Android.OS;
-using Android.Views;
 using Android.Widget;
-using AndroidX.AppCompat.App;
 using AndroidX.DrawerLayout.Widget;
 using AndroidX.RecyclerView.Widget;
 using Google.Android.Material.Navigation;
@@ -12,19 +10,17 @@ using JoanZapata.XamarinIconify;
 using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
 using LLU.Android.LLU.Models;
-using LLU.Models;
 using MimeKit;
 using System;
 using System.Collections.Generic;
 using Xamarin.Essentials;
-using static Android.Views.GestureDetector;
-using static Android.Views.View;
 
 namespace LLU.Android.Views
 {
     [Activity(Label = "EmailActivity")]
     public class EmailActivity : Activity
     {
+        #region Declaration
         List<int> SelectedMessages = new();
         private RecyclerView _recyclerView = new(Application.Context);
         private RecyclerView.LayoutManager mLayoutManager;
@@ -35,6 +31,7 @@ namespace LLU.Android.Views
         private Button ExitButton;
         private ImageButton HamburgerMenu;
         DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
+        #endregion
         // todo fix xiconify
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -42,13 +39,25 @@ namespace LLU.Android.Views
             Platform.Init(this, savedInstanceState);
             Iconify.With(new MaterialModule());
             SetContentView(Resource.Layout.EmailActivity);
+
             var toolbar = FindViewById<Toolbar>(Resource.Id.NavToolbar);
+            var ExitButton = FindViewById<Button>(Resource.Id.LogoutButton);
             HamburgerMenu = FindViewById<ImageButton>(Resource.Id.HamburgerButton);
-            var ExitButton = FindViewById<Button>(Resource.Id.LogoutButton); 
-            HamburgerMenu.SetImageDrawable(new IconDrawable(this, MaterialIcons.md_menu.ToString()));
             drawerLayout = FindViewById<DrawerLayout>(Resource.Id.EmailDrawer);
             navigationView = FindViewById<NavigationView>(Resource.Id.nav_view);
+
+            HamburgerMenu.SetImageDrawable(new IconDrawable(this, MaterialIcons.md_menu.ToString()));
+
             HamburgerMenu.Click += MenuClick;
+            ExitButton.Click += ExitButton_Click;
+        }
+
+        private void ExitButton_Click(object sender, EventArgs e)
+        {
+            EmailUser.Database.WipeDatabase();
+            Intent BackToStart = new Intent(this, typeof(LoginActivity));
+            StartActivity(BackToStart);
+            Finish();
         }
 
         private void MenuClick(object sender, EventArgs e)
@@ -68,11 +77,7 @@ namespace LLU.Android.Views
         {
             base.OnPostCreate(savedInstanceState);
 
-            _messages.AddRange(EmailUser.EmailUserData.GetMessages());
-            //create a new instance of _messages to prevent adapter from crashing
-            if (_messages == null)
-                _messages = new List<MimeMessage>();
-
+            _messages.AddRange(EmailUser.EmailUserData.Messages);
 
             //Initialize adapter
             adapter = new EmailsViewAdapter(_messages);
@@ -94,12 +99,11 @@ namespace LLU.Android.Views
         protected override void OnStop()
         {
             base.OnStop();
-            EmailUser.EmailUserData.Disconnect();
-            Finish();
         }
         protected override void OnDestroy()
         {
             base.OnDestroy();
+            EmailUser.EmailUserData.Dispose();
         }
         private void OnItemLongClick(object sender, int e)
         {
@@ -126,11 +130,11 @@ namespace LLU.Android.Views
             //EmailUser.EmailUserData.DeleteMessages(uids);
         }
 
-        private void ExecuteSeen(object sender, System.EventArgs e)
+        private void ExecuteSeen(object sender, EventArgs e)
         {
 
         }
-        private void ExecuteSeenAll(object sender, System.EventArgs e)
+        private void ExecuteSeenAll(object sender, EventArgs e)
         {
 
         }

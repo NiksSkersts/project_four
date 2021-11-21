@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace LLU.Android.LLU.Models
 {
-    public class EmailUser : User
+    public class EmailUser : User, IDisposable
     {
         #region Imap Client
         // WARNING: One should be careful with Disconnect(). It's advised to disconnect from the server to free up the socket, but one should not do it too often.
@@ -20,7 +20,7 @@ namespace LLU.Android.LLU.Models
             get
             {
                 if (_client == null)
-                //Client should be null only when the app is launched for the first time, or when disconnect was required (or forced, e.g. password change)
+                //Client should be null only when the app is launched for the first time, when disconnect was required or forced, e.g. password change
                 {
                     var bundle = EmailController.Connect(Host, Port);
                     _client = bundle;
@@ -28,23 +28,28 @@ namespace LLU.Android.LLU.Models
                 return _client;
 
             }
+            set
+            {
+                if(value is null && Client.Item2.IsConnected)
+                    // Value == null means that the program is requesting client to disconnect.
+                    // Destroying client without disconnecting is strongly discouraged!
+                {
+                    Client.Item2.DisconnectAsync(true);
+                    Client.Item2.Dispose();
+                }
+                else
+                    _client = value;
+            }
         }
         #endregion
         protected List<MimeMessage> _messages;
-        private List<MimeMessage> Messages
+        public List<MimeMessage> Messages
         {
             get
             {
                 if (_messages != null)
-                {
-                    var isChanged = Database.CheckForChanges(UserData.UserID, _messages[0].MessageId, _messages.Count);
-                    if (isChanged)
-                    {
+                    if (Database.CheckForChanges(UserData.UserID, _messages[0].MessageId, _messages.Count))
                         _messages = null;
-                        goto DoItAgain;
-                    }
-                }
-            DoItAgain:
                 using var client = Client.Item2;
                 if (client != null)
                 {
@@ -56,22 +61,20 @@ namespace LLU.Android.LLU.Models
                         _messages = messages;
                     }
                     else
-                    {
                         return null;
-                    }
                 }
                 else
-                {
                     return null;
-                }
 
                 return _messages;
             }
-        }
-        public void Disconnect()
-        {
-            Client.Item2.DisconnectAsync(true);
-            Client.Item2.Dispose();
+            set
+            {
+                if (_messages == null)
+                    _messages = value;
+                else
+                    _messages.AddRange(value);
+            }
         }
         private EmailUser()
         //Gets and assigns secrets from deserialized json file, before the rest of the construction begins.
@@ -108,9 +111,7 @@ namespace LLU.Android.LLU.Models
             UserData = userData;
             Database.SaveUserAsync(UserData);
         }
-        //For test purposes UserId == Username
         public string GetUserid() => UserData.UserID;
-        public List<MimeMessage> GetMessages() => Messages;
         public bool Auth()
         {
             if (Client.Item1 == 1) return false;
@@ -128,12 +129,21 @@ namespace LLU.Android.LLU.Models
             }
             return false;
         }
-        public Tuple<byte, ImapClient> GetClient() => Client;
 
         // Overrides any value that is currently assigned to the variables.
         // Variables are created as "protected" and their value should not be allowed to be viewed in outside classes.
         // Setting a new value is fine as long as it doesn't leak the original value.
         public void SetUserName(string username) => UserData.Username = username;
         public void SetPassword(string password) => UserData.Password = password;
+
+        public void Dispose()
+        {
+            Client = null;
+            Database.Dispose();
+        }
+        public void ClientIdle()
+        {
+
+        }
     }
 }

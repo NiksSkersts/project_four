@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 #nullable enable
 namespace LLU.Android.Controllers
 {
-    public class DatabaseController
+    public class DatabaseController : IDisposable
     {
         readonly SQLiteAsyncConnection database;
         public DatabaseController(string DbPath)
@@ -103,5 +103,6 @@ namespace LLU.Android.Controllers
             return count;
         }
 
+        public void Dispose() => database.CloseAsync();
     }
 }

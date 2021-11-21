@@ -1,13 +1,10 @@
-﻿using Android.App;
-using Android.Widget;
-using MailKit;
+﻿using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Search;
 using MailKit.Security;
 using MimeKit;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 #nullable enable
