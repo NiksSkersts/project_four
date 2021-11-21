@@ -9,6 +9,7 @@
     <Import_RootNamespace>LLU</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Controllers\ClientController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\DatabaseData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Secrets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\User.cs">

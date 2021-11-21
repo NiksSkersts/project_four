@@ -60,7 +60,6 @@
     <Compile Include="Main.cs" />
     <Compile Include="Models\AttachmentViewAdapter.cs" />
     <Compile Include="Controllers\DataController.cs" />
-    <Compile Include="Controllers\EmailController.cs" />
     <Compile Include="Models\EmailsViewAdapter.cs" />
     <Compile Include="Controllers\MessagingController.cs" />
     <Compile Include="Models\AttachmentViewHolder.cs" />

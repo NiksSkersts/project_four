@@ -30,21 +30,14 @@ namespace LLU.Android.Controllers
                 EmailUser.EmailUserData.SetUserName(userdata.Username);
                 EmailUser.EmailUserData.SetPassword(userdata.Password);
             }
-            if(EmailUser.EmailUserData.Client.Item1 == 0)
-                return true;
-            return false;
-        }
-        public static bool Auth(UserData userdata)
-        {
-            if (CreateEmailUser(userdata))
-                return EmailUser.EmailUserData.Auth();
-            return false;
+
+            return EmailUser.EmailUserData.IsClientConnected;
         }
         public static byte Login(UserData temp)
         {
             if (temp is null) return 2;
             if (CreateEmailUser(temp))
-                if (Auth(temp))
+                if (EmailUser.EmailUserData.IsClientAuthenticated)
                     return 0;
                 else
                     return 2;

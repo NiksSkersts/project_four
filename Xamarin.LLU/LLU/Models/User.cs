@@ -25,24 +25,18 @@ namespace LLU.Models
                 return database;
             }
         }
-        private static Secrets secret;
         protected static Secrets Secrets
         {
             get
             {
-                if(secret !=null)
-                    return secret;
-
                 AssetManager assets = Application.Context.Assets;
                 using var streamReader = new StreamReader(assets.Open("secrets"));
                 var stream = streamReader.ReadToEnd();
                 var secrets = JsonConvert.DeserializeObject<Secrets>(stream);
-                secret = secrets;
                 return secrets;
             }
         }
-        protected string Host { get; set; }
-        protected int Port { get; set; }
+
         protected UserData UserData { get; set; }
 
         //Stores temporary data that gets deleted when the application terminates.

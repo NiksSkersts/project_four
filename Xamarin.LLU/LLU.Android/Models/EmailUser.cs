@@ -1,67 +1,47 @@
-﻿using LLU.Android.Controllers;
+﻿using LLU.Controllers;
 using LLU.Models;
-using MailKit.Net.Imap;
 using MimeKit;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LLU.Android.LLU.Models
 {
     public class EmailUser : User, IDisposable
     {
-        #region Imap Client
-        // WARNING: One should be careful with Disconnect(). It's advised to disconnect from the server to free up the socket, but one should not do it too often.
-        // LLU has some kind of security in place that blocks too many attempted Connect() requests - from this app and other third party apps like thunderbird.
-        // As far as I am aware, the suggestion is to disconnect on app exit or pause.
-        // Imap clients were created with long-lived connections in mind. As far as I am aware, while not in active use, they enter IDLE mode and just sync from time to time to get push notifications.
-        protected Tuple<byte, ImapClient> _client;
-        public Tuple<byte, ImapClient> Client
+        private ClientController clientController;
+        protected List<MimeMessage> _messages;
+        public bool IsClientConnected => clientController.Client.Item2.IsConnected;
+        public bool IsClientAuthenticated
         {
             get
             {
-                if (_client == null)
-                //Client should be null only when the app is launched for the first time, when disconnect was required or forced, e.g. password change
-                {
-                    var bundle = EmailController.Connect(Host, Port);
-                    _client = bundle;
-                }
-                return _client;
+                if (IsClientConnected is false)
+                    return false;
 
-            }
-            set
-            {
-                if(value is null && Client.Item2.IsConnected)
-                    // Value == null means that the program is requesting client to disconnect.
-                    // Destroying client without disconnecting is strongly discouraged!
-                {
-                    Client.Item2.DisconnectAsync(true);
-                    Client.Item2.Dispose();
-                }
-                else
-                    _client = value;
+                var status = clientController.Client.Item2.IsAuthenticated;
+                if (status is false)
+                    status = clientController.ClientAuth(UserData.Username, UserData.Password);
+                return status;
             }
         }
-        #endregion
-        protected List<MimeMessage> _messages;
         public List<MimeMessage> Messages
         {
             get
             {
-                if (_messages != null)
-                    if (Database.CheckForChanges(UserData.UserID, _messages[0].MessageId, _messages.Count))
-                        _messages = null;
-                using var client = Client.Item2;
-                if (client != null)
+                if (IsClientAuthenticated is false)
+                    return null;
+
+                using var client = clientController.Client.Item2;
+                List<MimeMessage> messages = clientController.GetMessages();
+                if (messages != null)
                 {
-                    List<MimeMessage> messages = EmailController.GetMessages(client);
-                    if (messages != null)
+                    messages.OrderByDescending(date => date.Date);
+                    if (Database.CheckForChanges(UserData.UserID, messages[0].MessageId, messages.Count))
                     {
-                        messages.Reverse();
                         Database.ApplyChanges(messages, UserData.UserID);
                         _messages = messages;
                     }
-                    else
-                        return null;
                 }
                 else
                     return null;
@@ -76,11 +56,10 @@ namespace LLU.Android.LLU.Models
                     _messages.AddRange(value);
             }
         }
+
         private EmailUser()
-        //Gets and assigns secrets from deserialized json file, before the rest of the construction begins.
         {
-            Host = Secrets.MailServer;
-            Port = Secrets.MailPort;
+            clientController = new ClientController(Secrets);
         }
 
         // Constructor creates a new EmailUser on app launch.
@@ -94,7 +73,7 @@ namespace LLU.Android.LLU.Models
             {
                 // WARNING: One should avoid validating by char count(). Not all LLU employees or students have matr.code;
                 // Notable examples are students who were employees of LLU first, before they begun to study.
-                Guid temp = new();
+                Guid temp = Guid.NewGuid();
                 userData.UserID = temp.ToString();
 
                 // WARNING: LLU only accepts username that contains the part before the @ (matr.code), while other email services accept either both or full username with domain.
@@ -112,23 +91,6 @@ namespace LLU.Android.LLU.Models
             Database.SaveUserAsync(UserData);
         }
         public string GetUserid() => UserData.UserID;
-        public bool Auth()
-        {
-            if (Client.Item1 == 1) return false;
-            if (Client.Item2.IsConnected)
-            {
-                try
-                {
-                    Client.Item2.Authenticate(UserData.Username, UserData.Password);
-                    return true;
-                }catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    return false;
-                }
-            }
-            return false;
-        }
 
         // Overrides any value that is currently assigned to the variables.
         // Variables are created as "protected" and their value should not be allowed to be viewed in outside classes.
@@ -138,12 +100,8 @@ namespace LLU.Android.LLU.Models
 
         public void Dispose()
         {
-            Client = null;
+            clientController.Dispose();
             Database.Dispose();
-        }
-        public void ClientIdle()
-        {
-
         }
     }
 }
