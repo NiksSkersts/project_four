@@ -27,6 +27,7 @@ namespace LLU.Android.Views
         // On "Server not available", application warns user to try again later, and loads local data meanwhile.
         // On "Wrong credentials", application wipes data in the database and goes through the first login process again.
         // On first login app asks for crdentials and attempts login at button press.
+
         protected override void OnCreate(Bundle savedInstanceState)
         {
 
