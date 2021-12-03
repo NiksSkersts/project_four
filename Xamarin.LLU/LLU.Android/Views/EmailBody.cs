@@ -4,10 +4,10 @@ using Android.OS;
 using Android.Webkit;
 using Android.Widget;
 using AndroidX.RecyclerView.Widget;
-using JoanZapata.XamarinIconify;
-using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using Xamarin.Essentials;
 
 namespace LLU.Android
 {
@@ -35,6 +35,7 @@ namespace LLU.Android
                 return names;
             }
         }
+        private List<string> ListviewData;
         private string[] IntentAttachments
         {
             get
@@ -53,7 +54,10 @@ namespace LLU.Android
         public TextView From { get; set; }
         public TextView To { get; set; }
         public WebView Body { get; set; }
+        public ListView Attachments { get; set; }
         public ImageButton BackButton { get; set; }
+
+        private AtatchmentDataAdapter IntentAttachmentsAdapter;
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -62,7 +66,8 @@ namespace LLU.Android
             Subject = FindViewById<TextView>(Resource.Id.EB_Subject);
             From = FindViewById<TextView>(Resource.Id.EB_From);
             To = FindViewById<TextView>(Resource.Id.EB_To);
-            Body = new WebView(this);
+            Body = FindViewById<WebView>(Resource.Id.EB_Body);
+            
             if (Intent.Extras != null)
             {
                 var body = Intent.Extras.GetStringArray("Body");
@@ -83,18 +88,25 @@ namespace LLU.Android
 
             if (AttachmentData != null)
             {
-                AttachmentFrame = new(this);
-                var adapter = new AttachmentViewAdapter(AttachmentData);
-                var layoutmanager = new LinearLayoutManager(Application.Context);
-                AttachmentFrame.SetAdapter(adapter);
-                AttachmentFrame.SetLayoutManager(layoutmanager);
-                MainLayout.AddView(AttachmentFrame);
-            }
-        }
+                ListviewData = new();
+                foreach (var item in AttachmentData)
+                {
+                    ListviewData.Add(item.Key);
+                }
+                IntentAttachmentsAdapter = new(this, ListviewData);
 
-        private void BackButtonClick(object sender, System.EventArgs e)
-        {
-            OnBackPressed();
+                Attachments = FindViewById<ListView>(Resource.Id.EB_Attachments);
+                Attachments.Adapter = IntentAttachmentsAdapter;
+                Attachments.ItemClick += (object sender, AdapterView.ItemClickEventArgs e) =>
+                {
+                    string selectedFromList = Attachments.GetItemAtPosition(e.Position).ToString();
+                    var path = AttachmentData[selectedFromList];
+                    Launcher.OpenAsync(new OpenFileRequest
+                    {
+                        File = new ReadOnlyFile(path)
+                    });
+                };
+            }
         }
     }
 }

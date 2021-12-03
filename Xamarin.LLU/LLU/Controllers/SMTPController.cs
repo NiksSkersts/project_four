@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace LLU.Controllers
 {
-    internal class SMTPController : Controller,IDisposable 
+    internal class SMTPController : Controller, IDisposable
     {
         protected Tuple<byte, SmtpClient> _client;
 
@@ -23,79 +23,64 @@ namespace LLU.Controllers
             get
             {
                 byte code = 0;
-                SmtpClient client;
                 if (_client != null)
                     return _client;
-                else
+                SmtpClient client = new();
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+                try
                 {
-                    client = new();
-                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-                    try
-                    {
-                        client.Connect(Host, Port, SecureSocketOptions.StartTls);
-                        _client = Tuple.Create(code, client);
-                        return _client;
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e);
-                        code = 1;
-                    }
+                    client.Connect(Host, Port, SecureSocketOptions.StartTls);
+                    _client = Tuple.Create(code, client);
+                    return _client;
                 }
-                return Tuple.Create((byte)1, client);
-            }
-            set
-            {
-                _client = value;
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    code = 1;
+                    return Tuple.Create<byte, SmtpClient>(code, null);
+                }
             }
         }
         public bool ClientAuth(string username, string password)
         {
             if (Client.Item1 == 1) return false;
-            if (Client.Item2.IsConnected)
+            try
+            {
+                cancel = new CancellationTokenSource();
+                Client.Item2.Authenticate(username, password, cancel.Token);
+                return Client.Item2.IsAuthenticated;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return false;
+            }
+        }
+        public bool SendMessage(MimeMessage email, string username, string password)
+        {
+            var client = Client;
+            var auth = false;
+            if (client.Item1!=1 && client.Item2.IsConnected)
             {
                 try
                 {
-                    cancel = new CancellationTokenSource();
-                    Client.Item2.Authenticate(username, password, cancel.Token);
-                    return true;
+                    auth = ClientAuth(username, password);
+                    if (auth)
+                        client.Item2.SendAsync(email);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
-                    Dispose();
-                    return false;
                 }
+                Client.Item2.DisconnectAsync(true);
             }
-            return false;
-        }
-        public bool SendMessage(MimeMessage email, string username, string password)
-        {
-            try
-            {
-                var client = Client;
-                if (client.Item2.IsConnected)
-                {
-                    var auth = ClientAuth(username, password);
-                    if (auth)
-                        client.Item2.SendAsync(email);
-                    client.Item2.DisconnectAsync(true);
-                    return auth;
-                }
-                Dispose();
-                return false;
-
-            }
-            catch
-            {
-                Dispose();
-                return false;
-            }
+            Dispose();
+            return auth;
         }
         public new void Dispose()
         {
-            cancel.Cancel();
             Client.Item2.Dispose();
+            cancel.Cancel();
         }
     }
 }

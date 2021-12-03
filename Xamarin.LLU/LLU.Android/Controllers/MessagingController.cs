@@ -6,6 +6,7 @@ namespace LLU.Android.Controllers
 {
     internal static class MessagingController
     {
+        public static void ShowSMTPSendError() => MakeToast("Kļūda nosūtot ziņu.");
         public static void ShowConnnectionError() => MakeToast("Kļūda pieslēdzoties, mēģiniet vēlreiz.");
         public static void ShowConnnectionErrorInternalFailure() => MakeToast("Kļūda pieslēdzoties. Iekšēja datu kļūda.");
         public static void ShowConnnectionErrorServerFailure() => MakeToast("Serveris nav pieejams! \n Lūdzu uzgaidiet.");

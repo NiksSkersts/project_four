@@ -23,10 +23,8 @@ namespace LLU.Controllers
         {
             get
             {
-                if (_client == null)
-                {
+                if (_client == null || _client.Item2.IsConnected is false)
                     _client = Connect(Host, Port);
-                }
                 return _client;
             }
             set

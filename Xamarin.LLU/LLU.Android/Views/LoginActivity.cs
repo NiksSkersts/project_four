@@ -86,7 +86,6 @@ namespace LLU.Android.Views
             layout.AddView(loading);
             var temp = loginButton.Text;
             loginButton.Text = "{ fa-cog spin }";
-            //loginButton.Background = new JoanZapata.XamarinIconify.IconDrawable(Application.Context, JoanZapata.XamarinIconify.Fonts.MaterialIcons.md_cached);
 
             var attempt = AccountController.Login(usernamefield.Text.ToString(), passwordfield.Text.ToString());
             if (attempt == 0)

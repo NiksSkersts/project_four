@@ -5,6 +5,7 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using AndroidX.AppCompat.Widget;
+using LLU.Android.Controllers;
 using LLU.Android.LLU.Models;
 using System;
 using System.Collections.Generic;
@@ -28,16 +29,16 @@ namespace LLU.Android.Views
             subject = FindViewById<EditText>(Resource.Id.WE_Subject);
             body = FindViewById<EditText>(Resource.Id.WE_Body);
             SendButton = FindViewById<Button>(Resource.Id.WE_Send);
-
             SendButton.Click += SendButton_Click;
-
-
         }
 
         private void SendButton_Click(object sender, EventArgs e)
         {
-            EmailUser.EmailUserData.CreateAndSendMessage(to.Text.ToString(),subject.Text.ToString(),body.Text.ToString());
-            Finish();
+            var attemptToSend = EmailUser.EmailUserData.CreateAndSendMessage(to.Text.ToString(),subject.Text.ToString(),body.Text.ToString());
+            if (attemptToSend)
+                Finish();
+            else
+                MessagingController.ShowSMTPSendError();
         }
     }
 }

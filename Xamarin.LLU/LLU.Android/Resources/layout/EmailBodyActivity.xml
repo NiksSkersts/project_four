@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:id="@+id/EmailMainLayout"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/EmailMainLayout"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
     <TextView
         android:text="Subject"
         android:layout_width="match_parent"
@@ -23,4 +25,15 @@
         android:layout_height="wrap_content"
         android:id="@+id/EB_To"
         android:textSize="14dp" />
+    <ListView
+        android:id="@+id/EB_Attachments"
+        android:layout_width="match_parent"
+        android:minHeight="0dp"
+        android:layout_height="wrap_content"/>
+    <android.webkit.WebView
+        android:id="@+id/EB_Body"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:backgroundTint="#ff202020" 
+        android:padding="10dp"/>
 </LinearLayout>

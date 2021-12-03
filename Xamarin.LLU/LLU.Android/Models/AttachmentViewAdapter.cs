@@ -1,41 +1,42 @@
-﻿using Android.Views;
+﻿using Android.App;
+using Android.Views;
 using Android.Widget;
-using AndroidX.RecyclerView.Widget;
-using LLU.Android.LLU.Models;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using Xamarin.Essentials;
 
 namespace LLU.Android.Controllers
 {
-    internal class AttachmentViewAdapter : RecyclerView.Adapter
+    public class AtatchmentDataAdapter : BaseAdapter<string>
     {
-        public Dictionary<string, string> _filenames;
-        public AttachmentViewAdapter(Dictionary<string, string> filenames) => _filenames = filenames;
-        public override int ItemCount => _filenames.Count;
-        public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
-        {
-            AttachmentViewHolder vh = holder as AttachmentViewHolder ?? throw new InvalidOperationException();
-            vh.Name.Text = _filenames.Keys.ToArray()[position];
-        }
 
-        public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
-        {
-            View item = new(parent.Context);
-            item.Click += Item_Click;
-            AttachmentViewHolder vh = new(item);
-            return vh;
-        }
+        List<string> items;
 
-        private void Item_Click(object sender, EventArgs e)
+        Activity context;
+        public AtatchmentDataAdapter(Activity context, List<string> items)
+            : base()
         {
-            var attachment = sender as TextView;
-            var filename = attachment.Text;
-            Launcher.OpenAsync(new OpenFileRequest()
-            {
-                File = new ReadOnlyFile(_filenames.Single(key => key.Key.Equals(filename)).Value)
-            });
+            this.context = context;
+            this.items = items;
+        }
+        public override long GetItemId(int position)
+        {
+            return position;
+        }
+        public override string this[int position]
+        {
+            get { return items[position]; }
+        }
+        public override int Count
+        {
+            get { return items.Count; }
+        }
+        public override View GetView(int position, View convertView, ViewGroup parent)
+        {
+            var item = items[position];
+            View view = convertView;
+            if (view == null) // no view to re-use, create new
+                view = LayoutInflater.From(parent.Context).Inflate(Resource.Layout.AttachmentListTemplate, parent, false);
+            view.FindViewById<TextView>(Resource.Id.ALT_Name).Text = item;
+            return view;
         }
     }
 }
