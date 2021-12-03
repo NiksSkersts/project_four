@@ -29,7 +29,8 @@ namespace LLU.Android.Views
         private DrawerLayout drawerLayout;
         private NavigationView navigationView;
         private Button ExitButton;
-        private ImageButton HamburgerMenu;
+        private Button HamburgerMenu;
+        private Button WriteButton;
         DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
         #endregion
         // todo fix xiconify
@@ -38,23 +39,33 @@ namespace LLU.Android.Views
             base.OnCreate(savedInstanceState);
             Platform.Init(this, savedInstanceState);
             Iconify.With(new MaterialModule());
+            Iconify.With(new FontAwesomeModule());
             SetContentView(Resource.Layout.EmailActivity);
 
             var toolbar = FindViewById<Toolbar>(Resource.Id.NavToolbar);
             var ExitButton = FindViewById<Button>(Resource.Id.LogoutButton);
-            HamburgerMenu = FindViewById<ImageButton>(Resource.Id.HamburgerButton);
+            HamburgerMenu = FindViewById<Button>(Resource.Id.HamburgerButton);
+            WriteButton = FindViewById<Button>(Resource.Id.WriteEmailButton);
             drawerLayout = FindViewById<DrawerLayout>(Resource.Id.EmailDrawer);
             navigationView = FindViewById<NavigationView>(Resource.Id.nav_view);
 
-            HamburgerMenu.SetImageDrawable(new IconDrawable(this, MaterialIcons.md_menu.ToString()));
-
+            HamburgerMenu.Background = new IconDrawable(this, FontAwesomeIcons.fa_bug.ToString()).WithColor(Color.Red);
+            WriteButton.Background = new IconDrawable(this, FontAwesomeIcons.fa_500px.ToString()).WithColor(Color.Red);
             HamburgerMenu.Click += MenuClick;
+            WriteButton.Click += WriteButton_Click;
             ExitButton.Click += ExitButton_Click;
+        }
+
+        private void WriteButton_Click(object sender, EventArgs e)
+        {
+            Intent WriteEmail = new Intent(this, typeof(WriteEmailActivity));
+            StartActivity(WriteEmail);
         }
 
         private void ExitButton_Click(object sender, EventArgs e)
         {
             EmailUser.Database.WipeDatabase();
+            EmailUser.EmailUserData.Dispose();
             Intent BackToStart = new Intent(this, typeof(LoginActivity));
             StartActivity(BackToStart);
             Finish();
@@ -112,7 +123,7 @@ namespace LLU.Android.Views
         private void ExecuteDeleteAll(object sender, EventArgs e)
         {
             List<string> uids = new();
-            foreach(var message in _messages)
+            foreach (var message in _messages)
             {
                 uids.Add(message.MessageId);
             }

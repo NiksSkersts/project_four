@@ -8,7 +8,7 @@ using System.IO;
 
 namespace LLU.Models
 {
-    public abstract class User
+    internal abstract class User
     {
         static DatabaseController database;
 

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace LLU.Android.Controllers
 {
-    internal abstract class DataController
+    internal static class DataController
     {
         public static string GetLocalAppData() => System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
         public static string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);

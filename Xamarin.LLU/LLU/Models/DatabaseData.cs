@@ -17,11 +17,10 @@ namespace LLU.Models
         public string Body { get; set; }
         public bool IsHtmlBody { get; set; }
         public bool DeleteFlag { get; set; }
-
     }
     public class UserData
     {
-        [PrimaryKey,OneToOne]
+        [PrimaryKey,OneToMany]
         public string UserID { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }

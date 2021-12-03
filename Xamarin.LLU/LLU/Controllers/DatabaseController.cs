@@ -3,6 +3,7 @@ using MimeKit;
 using SQLite;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
 #nullable enable
@@ -68,7 +69,7 @@ namespace LLU.Android.Controllers
                     return true;
             return false;
         }
-        public int ApplyChanges(List<MimeMessage> data, string userID)
+        public int ApplyChanges(ObservableCollection<MimeMessage> data, string userID)
             // Applies the changes from the server to the app database.
         {
             var count = 0;

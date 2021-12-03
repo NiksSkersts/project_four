@@ -55,21 +55,18 @@
     <Reference Include="Mono.Android" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Controllers\AccountController.cs" />
-    <Compile Include="Controllers\DatabaseController.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Models\AttachmentViewAdapter.cs" />
-    <Compile Include="Controllers\DataController.cs" />
     <Compile Include="Models\EmailsViewAdapter.cs" />
     <Compile Include="Controllers\MessagingController.cs" />
     <Compile Include="Models\AttachmentViewHolder.cs" />
     <Compile Include="Models\EmailsViewHolder.cs" />
     <Compile Include="Views\EmailActivity.cs" />
     <Compile Include="Views\EmailBody.cs" />
-    <Compile Include="Models\EmailUser.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Views\LoginActivity.cs" />
+    <Compile Include="Views\WriteEmailActivity.cs" />
   </ItemGroup>
   <ItemGroup>
     <AndroidAsset Include="Assets\secrets" />
@@ -78,7 +75,7 @@
     <None Include="Assets\AboutAssets.txt" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="Resources\layout\EmailBody.xml" />
+    <AndroidResource Include="Resources\layout\EmailBodyActivity.xml" />
     <AndroidResource Include="Resources\layout\EmailActivity.axml" />
     <AndroidResource Include="Resources\values\strings.xml" />
   </ItemGroup>
@@ -137,12 +134,17 @@
     </AndroidResource>
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="Resources\layout\Login.xml">
+    <AndroidResource Include="Resources\layout\LoginActivity.xml">
       <SubType>Designer</SubType>
     </AndroidResource>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\drawable\" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\WriteEmailActivity.xml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
   </ItemGroup>
   <Import Project="..\LLU\LLU.projitems" Label="Shared" Condition="Exists('..\LLU\LLU.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />

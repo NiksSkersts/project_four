@@ -2,15 +2,16 @@
 using LLU.Models;
 using MimeKit;
 using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace LLU.Android.LLU.Models
 {
-    public class EmailUser : User, IDisposable
+    internal class EmailUser : User, IDisposable
     {
-        private ClientController clientController;
-        protected List<MimeMessage> _messages;
+        public ClientController clientController;
+        private SMTPController smtpController;
+        protected ObservableCollection<MimeMessage> _messages;
         public bool IsClientConnected => clientController.Client.Item2.IsConnected;
         public bool IsClientAuthenticated
         {
@@ -25,7 +26,7 @@ namespace LLU.Android.LLU.Models
                 return status;
             }
         }
-        public List<MimeMessage> Messages
+        public ObservableCollection<MimeMessage> Messages
         {
             get
             {
@@ -33,15 +34,13 @@ namespace LLU.Android.LLU.Models
                     return null;
 
                 using var client = clientController.Client.Item2;
-                List<MimeMessage> messages = clientController.GetMessages();
+                var messages = clientController.GetMessages();
                 if (messages != null)
                 {
-                    messages.OrderByDescending(date => date.Date);
+                    messages.OrderBy(date => date.Date);
                     if (Database.CheckForChanges(UserData.UserID, messages[0].MessageId, messages.Count))
-                    {
                         Database.ApplyChanges(messages, UserData.UserID);
-                        _messages = messages;
-                    }
+                    _messages = messages;
                 }
                 else
                     return null;
@@ -53,13 +52,17 @@ namespace LLU.Android.LLU.Models
                 if (_messages == null)
                     _messages = value;
                 else
-                    _messages.AddRange(value);
+                    foreach (var message in value)
+                    {
+                        _messages.Add(message);
+                    }
             }
         }
 
         private EmailUser()
         {
             clientController = new ClientController(Secrets);
+            smtpController = new SMTPController(Secrets);
         }
 
         // Constructor creates a new EmailUser on app launch.
@@ -72,7 +75,7 @@ namespace LLU.Android.LLU.Models
             try
             {
                 // WARNING: One should avoid validating by char count(). Not all LLU employees or students have matr.code;
-                // Notable examples are students who were employees of LLU first, before they begun to study.
+                // Notable examples are students who were employees of LLU first, before they began to study.
                 Guid temp = Guid.NewGuid();
                 userData.UserID = temp.ToString();
 
@@ -97,6 +100,27 @@ namespace LLU.Android.LLU.Models
         // Setting a new value is fine as long as it doesn't leak the original value.
         public void SetUserName(string username) => UserData.Username = username;
         public void SetPassword(string password) => UserData.Password = password;
+        public bool CreateAndSendMessage(string receiversString,string subject, string body)
+        {
+            var email = new MimeMessage();
+            var receivers = receiversString.Split(';');
+            var full_list = receivers.Where(mailaddress => mailaddress.Contains('@')).ToList();
+            for(int i = 0;i<full_list.Count-1; i++)
+                full_list[i].Trim();
+            try
+            {
+                email.From.Add(MailboxAddress.Parse($"{UserData.Username}@llu.lv"));
+                foreach (var receiver in full_list)
+                    email.To.Add(MailboxAddress.Parse(receiver));
+                email.Subject = subject;
+                email.Body = new TextPart(MimeKit.Text.TextFormat.Text) { Text = body };
+                return smtpController.SendMessage(email,UserData.Username,UserData.Password);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         public void Dispose()
         {

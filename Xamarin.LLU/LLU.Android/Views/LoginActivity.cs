@@ -32,7 +32,7 @@ namespace LLU.Android.Views
         {
 
             base.OnCreate(savedInstanceState);
-            SetContentView(Resource.Layout.Login);
+            SetContentView(Resource.Layout.LoginActivity);
             layout = FindViewById<LinearLayout>(Resource.Id.mainLoginLayout);
             loading = new(this);
             loading.TextAlignment = TextAlignment.Center;

@@ -57,12 +57,7 @@ namespace LLU.Android
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            SetContentView(Resource.Layout.EmailBody);
-
-            //BackButton = FindViewById<ImageButton>(Resource.Id.backbutton);
-            //BackButton.SetImageDrawable(new IconDrawable(this, MaterialIcons.md_arrow_back.ToString()));
-            //BackButton.Click += BackButtonClick;
-            //Bind various views to their XAML counterparts. Create events and deal with intent extras that I specified in EmailActivity.cs
+            SetContentView(Resource.Layout.EmailBodyActivity);
             MainLayout = FindViewById<LinearLayout>(Resource.Id.EmailMainLayout);
             Subject = FindViewById<TextView>(Resource.Id.EB_Subject);
             From = FindViewById<TextView>(Resource.Id.EB_From);

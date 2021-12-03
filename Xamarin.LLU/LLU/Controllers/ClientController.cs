@@ -1,19 +1,19 @@
-﻿using LLU.Models;
+﻿using Android.App;
+using LLU.Models;
 using MailKit;
 using MailKit.Net.Imap;
+using MailKit.Net.Smtp;
 using MailKit.Search;
 using MailKit.Security;
 using MimeKit;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.ObjectModel;
 
 namespace LLU.Controllers
 {
-    public class ClientController : IDisposable
+    internal class ClientController : Controller, IDisposable
     {
-        protected string Host { get; set; }
-        protected int Port { get; set; }
         // WARNING: One should be careful with Disconnect(). It's advised to disconnect from the server to free up the socket, but one should not do it too often.
         // LLU has some kind of security in place that blocks too many attempted Connect() requests - from this app and other third party apps like thunderbird.
         // As far as I am aware, the suggestion is to disconnect on app exit or pause.
@@ -24,13 +24,10 @@ namespace LLU.Controllers
             get
             {
                 if (_client == null)
-                //Client should be null only when the app is launched for the first time, when disconnect was required or forced, e.g. password change
                 {
-                    var bundle = Connect(Host, Port);
-                    _client = bundle;
+                    _client = Connect(Host, Port);
                 }
                 return _client;
-
             }
             set
             {
@@ -55,17 +52,20 @@ namespace LLU.Controllers
                     _client = value;
             }
         }
+        
 
         public ClientController(Secrets secrets)
         {
             Host = secrets.MailServer;
             Port = secrets.MailPort;
         }
+
         //Create a new connection with the server.
         //Authentificate and return the client.
         //Instead of crashing the app on failure, give out null, to implement safeguards and fallbacks in-app code. 
         private Tuple<byte, ImapClient> Connect(string host, int port)
         {
+            cancel = new System.Threading.CancellationTokenSource();
             // Quick intro into resultCode:
             // 0 - All good
             // 1 - Client connection failed
@@ -76,7 +76,8 @@ namespace LLU.Controllers
             client.ServerCertificateValidationCallback = (s, c, h, e) => true;
             try
             {
-                client.Connect(host, port, SecureSocketOptions.Auto);
+                client.Connect(host, port, SecureSocketOptions.Auto, cancel.Token);
+                
             }
             catch (Exception e)
             {
@@ -85,6 +86,7 @@ namespace LLU.Controllers
             }
             return Tuple.Create(resultCode, client);
         }
+
         // Disconnecting just because user inputted wrong credentials is a waste of resources, and can get you banned from the server for a period of time.
         // Keep connection with the server, but try auth again instead.
         public bool ClientAuth(string username, string password)
@@ -94,7 +96,7 @@ namespace LLU.Controllers
             {
                 try
                 {
-                    Client.Item2.Authenticate(username, password);
+                    Client.Item2.Authenticate(username, password, cancel.Token);
                     return true;
                 }
                 catch (Exception e)
@@ -105,13 +107,14 @@ namespace LLU.Controllers
             }
             return false;
         }
+
         public bool DeleteMessages(ImapClient client, List<string> Ids)
         {
             try
             {
                 foreach (var id in Ids)
                 {
-                    client.Inbox.AddFlagsAsync(UniqueId.Parse(id), MessageFlags.Deleted, true);
+                    client.Inbox.AddFlagsAsync(UniqueId.Parse(id), MessageFlags.Deleted, true, cancel.Token);
                 }
             }
             catch (Exception e)
@@ -122,7 +125,8 @@ namespace LLU.Controllers
             return true;
 
         }
-        public List<MimeMessage> GetMessages()
+
+        public ObservableCollection<MimeMessage> GetMessages()
         {
             if (Client.Item1 != 0)
                 return null;
@@ -131,20 +135,22 @@ namespace LLU.Controllers
             if (inbox == null) return new();
             return inbox;
         }
-        private List<MimeMessage> AccessMessages(ImapClient client)
+
+        private ObservableCollection<MimeMessage> AccessMessages(ImapClient client)
         {
-            List<MimeMessage> messages = new();
-            var state = client.Inbox.Open(FolderAccess.ReadOnly);
+            ObservableCollection<MimeMessage> messages = new();
+            var state = client.Inbox.Open(FolderAccess.ReadOnly, cancel.Token);
             if (state != FolderAccess.None)
             {
                 var uids = client.Inbox.Search(SearchQuery.All);
-                messages = uids.Select(uid => client.Inbox.GetMessage(uid)).ToList();
+                foreach (var uid in uids)
+                    messages.Add(client.Inbox.GetMessage(uid));
             }
             return messages;
         }
-        public void Dispose()
+        public new void Dispose()
         {
-            Client = null;
+            Client.Item2.Dispose();
         }
     }
 }
