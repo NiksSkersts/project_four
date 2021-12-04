@@ -114,7 +114,12 @@ namespace LLU.Android.LLU.Models
                     email.To.Add(MailboxAddress.Parse(receiver));
                 email.Subject = subject;
                 email.Body = new TextPart(MimeKit.Text.TextFormat.Text) { Text = body };
-                return smtpController.SendMessage(email,UserData.Username,UserData.Password);
+                var auth = smtpController.ClientAuth(UserData.Username, UserData.Password);
+                bool status = false;
+                if(auth)
+                    status = smtpController.SendMessage(email);
+                smtpController.Dispose();
+                return status && auth;
             }
             catch
             {

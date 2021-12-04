@@ -5,82 +5,78 @@ using MimeKit;
 using System;
 using System.Threading;
 
-namespace LLU.Controllers
-{
-    internal class SMTPController : Controller, IDisposable
-    {
-        protected Tuple<byte, SmtpClient> _client;
+namespace LLU.Controllers;
 
-        //Unlike IMAPClient, SMTPclient should be disconnected after sending the message. Please make sure all paths leads to disconnection and Dispose()
-        public SMTPController(Secrets secrets)
-        {
-            Host = secrets.MailServer;
-            Port = secrets.SMTPPort;
-        }
-
-        public Tuple<byte, SmtpClient> Client
-        {
-            get
-            {
-                byte code = 0;
-                if (_client != null)
-                    return _client;
+internal class SMTPController : IController {
+    protected string Host { get; set; }
+    protected int Port { get; set; }
+    public CancellationTokenSource cancel;
+    public CancellationTokenSource done;
+    protected SmtpClient _client;
+    /// <summary>
+    /// SMTPclient should be disconnected after sending the message. Please make sure all paths lead to disconnection and disposal.
+    /// </summary>
+    /// <param name="secrets">Company secrets that are given to trusted people in an json file.</param>
+    public SMTPController(Secrets secrets) {
+        Host = secrets.MailServer;
+        Port = secrets.SMTPPort;
+    }
+    public Tuple<byte, SmtpClient> Client {
+        get {
+            byte code = 0;
+            SmtpClient client = null;
+            if (_client != null) {
+                if (_client.IsConnected)
+                    client = _client;
+            }
+            else
+                client = Connect(ref code);
+            return Tuple.Create(code, client);
+            #region InnerFunctions
+            SmtpClient Connect(ref byte code) {
                 SmtpClient client = new();
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-                try
-                {
-                    client.Connect(Host, Port, SecureSocketOptions.StartTls);
-                    _client = Tuple.Create(code, client);
-                    return _client;
+                try {
+                    client.Connect(Host, Port, SecureSocketOptions.StartTls, cancel.Token);
                 }
-                catch (Exception e)
-                {
+                catch (Exception e) {
                     Console.WriteLine(e);
                     code = 1;
-                    return Tuple.Create<byte, SmtpClient>(code, null);
                 }
+                return client;
             }
+            #endregion
         }
-        public bool ClientAuth(string username, string password)
-        {
-            if (Client.Item1 == 1) return false;
-            try
-            {
-                cancel = new CancellationTokenSource();
-                Client.Item2.Authenticate(username, password, cancel.Token);
-                return Client.Item2.IsAuthenticated;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return false;
-            }
+    }
+    public byte Connect() => Client.Item1;
+    public bool ClientAuth(string username, string password) {
+        if (Connect() is 1)
+            return false;
+        cancel = new CancellationTokenSource();
+        try {
+            Client.Item2.Authenticate(username, password, cancel.Token);
         }
-        public bool SendMessage(MimeMessage email, string username, string password)
-        {
-            var client = Client;
-            var auth = false;
-            if (client.Item1!=1 && client.Item2.IsConnected)
-            {
-                try
-                {
-                    auth = ClientAuth(username, password);
-                    if (auth)
-                        client.Item2.SendAsync(email);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                }
-                Client.Item2.DisconnectAsync(true);
-            }
-            Dispose();
+        catch (Exception e) {
+            Console.WriteLine(e);
+        }
+        return Client.Item2.IsAuthenticated;
+    }
+    /// <summary>
+    /// Sends message via SMTP client.
+    /// <para>WARNING: Make sure you dispose of client after using it!</para>
+    /// <para>WARNING: Make sure you Authentificate before calling this function!</para>
+    /// </summary>
+    /// <param name="email"></param>
+    /// <returns></returns>
+    public bool SendMessage(MimeMessage email) {
+        var auth = false;
+        if (Connect() is 1 || Client.Item2.IsAuthenticated is false)
             return auth;
-        }
-        public new void Dispose()
-        {
-            Client.Item2.Dispose();
-            cancel.Cancel();
-        }
+        Client.Item2.SendAsync(email).ContinueWith(x => Client.Item2.DisconnectAsync(true));
+        return auth;
+    }
+    public void Dispose() {
+        Client.Item2.Dispose();
+        cancel.Cancel();
     }
 }
