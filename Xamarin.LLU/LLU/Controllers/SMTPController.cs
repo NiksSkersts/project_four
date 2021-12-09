@@ -1,82 +1,88 @@
-﻿using LLU.Models;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using LLU.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
-using System;
-using System.Threading;
 
 namespace LLU.Controllers;
 
-internal class SMTPController : IController {
-    protected string Host { get; set; }
-    protected int Port { get; set; }
-    public CancellationTokenSource cancel;
-    public CancellationTokenSource done;
-    protected SmtpClient _client;
+internal class SmtpController : IController {
+    private readonly CancellationTokenSource _cancel;
+
     /// <summary>
-    /// SMTPclient should be disconnected after sending the message. Please make sure all paths lead to disconnection and disposal.
+    ///     SMTPclient should be disconnected after sending the message. Please make sure all paths lead to disconnection and
+    ///     disposal.
     /// </summary>
     /// <param name="secrets">Company secrets that are given to trusted people in an json file.</param>
-    public SMTPController(Secrets secrets) {
-        Host = secrets.MailServer;
-        Port = secrets.SMTPPort;
+    public SmtpController(Secrets secrets) {
+        _cancel = new CancellationTokenSource();
+        Connect(secrets);
     }
-    public Tuple<byte, SmtpClient> Client {
+
+    private string Host { get; set; } = string.Empty;
+    private int Port { get; set; }
+
+    private Tuple<byte, SmtpClient> Client {
         get {
+            SmtpClient client = new();
+            client.ServerCertificateValidationCallback = (_, _, _, _) => true;
             byte code = 0;
-            SmtpClient client = null;
-            if (_client != null) {
-                if (_client.IsConnected)
-                    client = _client;
+            try {
+                client.Connect(Host, Port, SecureSocketOptions.StartTls, _cancel.Token);
             }
-            else
-                client = Connect(ref code);
+            catch (Exception e) {
+                _cancel.Cancel();
+                code = 1;
+            }
+
             return Tuple.Create(code, client);
-            #region InnerFunctions
-            SmtpClient Connect(ref byte code) {
-                SmtpClient client = new();
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-                try {
-                    client.Connect(Host, Port, SecureSocketOptions.StartTls, cancel.Token);
-                }
-                catch (Exception e) {
-                    Console.WriteLine(e);
-                    code = 1;
-                }
-                return client;
-            }
-            #endregion
         }
     }
-    public byte Connect() => Client.Item1;
+
+
+    public bool ClientAuth(UserData userData) => ClientAuth(userData.Username, userData.Password);
+
+    public void Dispose() {
+        Client.Item2.Dispose();
+        _cancel.Cancel();
+    }
+
+    public byte Connect(object data) {
+        var temp = (Secrets) data;
+        Host = temp.MailServer;
+        Port = temp.SMTPPort;
+        return 0;
+    }
+
     public bool ClientAuth(string username, string password) {
-        if (Connect() is 1)
+        if (Client.Item2.IsConnected is false)
             return false;
-        cancel = new CancellationTokenSource();
         try {
-            Client.Item2.Authenticate(username, password, cancel.Token);
+            Client.Item2.Authenticate(username, password, _cancel.Token);
         }
         catch (Exception e) {
-            Console.WriteLine(e);
+            return false;
         }
+
         return Client.Item2.IsAuthenticated;
     }
+
     /// <summary>
-    /// Sends message via SMTP client.
-    /// <para>WARNING: Make sure you dispose of client after using it!</para>
-    /// <para>WARNING: Make sure you Authentificate before calling this function!</para>
+    ///     Sends message via SMTP client.
+    ///     <para>WARNING: Make sure you dispose of client after using it!</para>
+    ///     <para>WARNING: Make sure you Authentificate before calling this function!</para>
     /// </summary>
     /// <param name="email"></param>
     /// <returns></returns>
-    public bool SendMessage(MimeMessage email) {
-        var auth = false;
-        if (Connect() is 1 || Client.Item2.IsAuthenticated is false)
-            return auth;
-        Client.Item2.SendAsync(email).ContinueWith(x => Client.Item2.DisconnectAsync(true));
-        return auth;
-    }
-    public void Dispose() {
-        Client.Item2.Dispose();
-        cancel.Cancel();
+    public Task<bool> SendMessage(MimeMessage email) {
+        return Task.FromResult(
+            Client.Item2.IsAuthenticated is not false &&
+            Client.Item2.SendAsync(email)
+                .ContinueWith(x =>
+                    Client.Item2.DisconnectAsync(true))
+                .Result
+                .IsCompletedSuccessfully);
     }
 }

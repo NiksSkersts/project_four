@@ -1,45 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-        <LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:id="@+id/mainLoginLayout"
-    android:gravity="top">
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/mainLoginLayout"
+        android:gravity="top">
     <TextView
-        android:text="@string/login"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/loginText"
-        android:textStyle="normal"
-        android:typeface="monospace"
-        android:textAlignment="center"
-        android:padding="50px" />
+            android:text="@string/login"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/loginText"
+            android:textStyle="normal"
+            android:typeface="monospace"
+            android:textAlignment="center"
+            android:padding="50px"/>
     <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minWidth="25px"
-        android:minHeight="25px"
-        android:id="@+id/usernamefield"
-        android:inputType="text"
-        android:layout_margin="50px"
-        android:hint="@string/matr" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minWidth="25px"
+            android:minHeight="25px"
+            android:id="@+id/usernamefield"
+            android:inputType="text"
+            android:layout_margin="50px"
+            android:hint="@string/matr"/>
     <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/passwordfield"
-        android:inputType="textPassword"
-        android:layout_margin="50px"
-        android:hint="@string/password" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/passwordfield"
+            android:inputType="textPassword"
+            android:layout_margin="50px"
+            android:hint="@string/password"/>
     <Button
-        android:text="@string/login_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/loginButton"
-        android:layout_marginLeft="100px"
-        android:layout_marginRight="100px"
-        android:clickable="true" />
+            android:text="@string/login_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/loginButton"
+            android:layout_marginLeft="100px"
+            android:layout_marginRight="100px"
+            android:clickable="true"/>
 </LinearLayout>
 
 

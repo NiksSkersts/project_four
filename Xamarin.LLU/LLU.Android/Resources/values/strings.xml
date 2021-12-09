@@ -3,10 +3,10 @@
     <string name="app_name">LLU.Android</string>
     <string name="login">Pieslēgšanās</string>
     <string name="login_button">Pieslēgties</string>
-	<string name="matr">Matrikulas Nr.</string>
-	<string name="password">Parole</string>
-	<string name="Delete">Nospied, lai izdzēstu atzīmētās ziņas!</string>
-	<string name="DeleteAll">Nospied, lai izdzēstu visas ziņas!</string>
-	<string name="Seen">Ziņa aplūkota!</string>
-	<string name="SeenAll">Visas ziņas aplūkotas!</string>
+    <string name="matr">Matrikulas Nr.</string>
+    <string name="password">Parole</string>
+    <string name="Delete">Nospied, lai izdzēstu atzīmētās ziņas!</string>
+    <string name="DeleteAll">Nospied, lai izdzēstu visas ziņas!</string>
+    <string name="Seen">Ziņa aplūkota!</string>
+    <string name="SeenAll">Visas ziņas aplūkotas!</string>
 </resources>
