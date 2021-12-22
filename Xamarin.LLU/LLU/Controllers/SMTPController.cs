@@ -9,7 +9,8 @@ using MimeKit;
 namespace LLU.Controllers;
 
 internal class SmtpController : IController {
-    private readonly CancellationTokenSource _cancel;
+    private CancellationTokenSource _cancel;
+    private SmtpClient? _smtpClient;
 
     /// <summary>
     ///     SMTPclient should be disconnected after sending the message. Please make sure all paths lead to disconnection and
@@ -26,9 +27,14 @@ internal class SmtpController : IController {
 
     private Tuple<byte, SmtpClient> Client {
         get {
-            SmtpClient client = new();
-            client.ServerCertificateValidationCallback = (_, _, _, _) => true;
             byte code = 0;
+
+            if (_smtpClient is {IsConnected: true})
+                return Tuple.Create(code,_smtpClient);
+            
+            SmtpClient client = new();
+            _cancel = new CancellationTokenSource();
+            client.ServerCertificateValidationCallback = (_, _, _, _) => true;
             try {
                 client.Connect(Host, Port, SecureSocketOptions.StartTls, _cancel.Token);
             }
@@ -37,6 +43,7 @@ internal class SmtpController : IController {
                 code = 1;
             }
 
+            _smtpClient = client;
             return Tuple.Create(code, client);
         }
     }
@@ -69,6 +76,7 @@ internal class SmtpController : IController {
         return Client.Item2.IsAuthenticated;
     }
 
+    //todo fix SendMessage function. It sends the message successfully, yet returns false...
     /// <summary>
     ///     Sends message via SMTP client.
     ///     <para>WARNING: Make sure you dispose of client after using it!</para>
@@ -76,13 +84,16 @@ internal class SmtpController : IController {
     /// </summary>
     /// <param name="email"></param>
     /// <returns></returns>
-    public Task<bool> SendMessage(MimeMessage email) {
-        return Task.FromResult(
-            Client.Item2.IsAuthenticated is not false &&
-            Client.Item2.SendAsync(email)
-                .ContinueWith(x =>
-                    Client.Item2.DisconnectAsync(true))
-                .Result
-                .IsCompletedSuccessfully);
+    public bool SendMessage(MimeMessage email) {
+        bool status;
+        try {
+            Client.Item2.Send(email);
+            Client.Item2.Disconnect(true);
+            status = true;
+        }
+        catch (Exception e) {
+            status = false;
+        }
+        return status;
     }
 }

@@ -16,17 +16,17 @@ namespace LLU.Android.Views;
 /// </summary>
 [Activity(Label = "LLU e-pasts", MainLauncher = true)]
 public class LoginActivity : Activity {
-    private readonly AccountController LoginAttempt = new();
+    private readonly AccountController _loginAttempt = new();
 
     protected override void OnCreate(Bundle? savedInstanceState) {
-        var userdata = LoginAttempt.Login();
+        var userdata = _loginAttempt.Login();
         if (userdata) StartEmailActivity();
         base.OnCreate(savedInstanceState);
         SetContentView(Resource.Layout.LoginActivity);
         _layout = FindViewById<LinearLayout>(Resource.Id.mainLoginLayout)!;
         _loginText = FindViewById<TextView>(Resource.Id.loginText)!;
-        _usernamefield = FindViewById<EditText>(Resource.Id.usernamefield)!;
-        _passwordfield = FindViewById<EditText>(Resource.Id.passwordfield)!;
+        _usernameField = FindViewById<EditText>(Resource.Id.usernamefield)!;
+        _passwordField = FindViewById<EditText>(Resource.Id.passwordfield)!;
         _loginButton = FindViewById<Button>(Resource.Id.loginButton)!;
         _loginButton.Click += DoLogin;
     }
@@ -38,39 +38,29 @@ public class LoginActivity : Activity {
     }
 
     private void DoLogin(object sender, EventArgs e) {
-        _layout.RemoveAllViews();
-        _layout.AddView(_loading);
         var temp = _loginButton.Text;
         _loginButton.Text = "{ fa-cog spin }";
-
-        if (_usernamefield.Text != null && _passwordfield.Text != null) {
-            var attempt = LoginAttempt.Login(_usernamefield.Text, _passwordfield.Text);
+        if (_usernameField.Text != null && _passwordField.Text != null) {
+            var attempt = _loginAttempt.Login(_usernameField.Text, _passwordField.Text);
             switch (attempt) {
                 case true:
                     StartEmailActivity();
                     break;
                 case false:
                     MessagingController.ShowConnectionError();
+                    _loginButton.Text = temp;
                     break;
             }
         }
-
-        _loginButton.Text = temp;
-        _layout.RemoveAllViews();
-        _layout.AddView(_loginText);
-        _layout.AddView(_usernamefield);
-        _layout.AddView(_passwordfield);
-        _layout.AddView(_loginButton);
     }
 
-    #region Declaration
+#region Declaration
 
-    private EditText _usernamefield;
-    private EditText _passwordfield;
-    private Button _loginButton;
-    private TextView _loading;
-    private LinearLayout _layout;
-    private TextView _loginText;
+    private EditText _usernameField = null!;
+    private EditText _passwordField = null!;
+    private Button _loginButton = null!;
+    private LinearLayout _layout = null!;
+    private TextView _loginText = null!;
 
-    #endregion
+#endregion
 }

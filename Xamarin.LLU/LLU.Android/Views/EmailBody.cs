@@ -11,9 +11,9 @@ namespace LLU.Android.Views;
 
 [Activity(Label = "EmailBody")]
 public class EmailBody : Activity {
-    private Dictionary<string, string> _data;
-    private AttachmentDataAdapter _intentAttachmentsAdapter;
-    private List<string> _listviewData;
+    private Dictionary<string, string> _data = null!;
+    private AttachmentDataAdapter _intentAttachmentsAdapter = null!;
+    private List<string> _listviewData = null!;
 
     private Dictionary<string, string> AttachmentData {
         get {
@@ -29,26 +29,26 @@ public class EmailBody : Activity {
                 }
 
             _data = names;
-            return names;
+            return _data;
         }
     }
 
     private IEnumerable<string>? IntentAttachments {
         get {
-            var attachmentsavailable = Intent.Extras.GetBoolean("Attachments");
-            if (Intent.Extras != null && attachmentsavailable)
+            var attachmentsAvailable = Intent is {Extras: { }} && Intent.Extras.GetBoolean("Attachments");
+            if (Intent?.Extras != null && attachmentsAvailable)
                 return Intent.Extras.GetStringArray("AttachmentLocationOnDevice")!;
 
             return null;
         }
     }
 
-    public TextView Subject { get; set; }
-    public LinearLayout MainLayout { get; set; }
-    public TextView From { get; set; }
-    public TextView To { get; set; }
-    public WebView Body { get; set; }
-    public ListView Attachments { get; set; }
+    private TextView Subject { get; set; } = null!;
+    private LinearLayout MainLayout { get; set; } = null!;
+    private TextView From { get; set; } = null!;
+    private TextView To { get; set; } = null!;
+    private WebView Body { get; set; } = null!;
+    private ListView Attachments { get; set; } = null!;
 
     protected override void OnCreate(Bundle? savedInstanceState) {
         base.OnCreate(savedInstanceState);
@@ -72,8 +72,8 @@ public class EmailBody : Activity {
             //Switch between two types of email. HTML and plain.
             //plain and hmtl have different formating, and is not cross-supported in webmail.
             //plain text in html mode looks bad and vice-versa
-            var type = $"text/{body[1]}";
-            Body.LoadDataWithBaseURL(null, body[0], type, "UTF-8", null);
+            var type = $"text/{body?[1]}";
+            Body.LoadDataWithBaseURL(null, body?[0] ?? string.Empty, type, "UTF-8", null);
         }
 
         _listviewData = new List<string>();

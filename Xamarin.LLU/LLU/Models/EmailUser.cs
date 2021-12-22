@@ -27,23 +27,24 @@ internal class EmailUser : User {
             email.Subject = subject;
             email.Body = new TextPart(TextFormat.Text) {Text = body};
             var auth = _smtpController.ClientAuth(Username, Password);
-            var status = false;
+            bool status = false;
             if (auth) {
-                status = _smtpController.SendMessage(email).Result;
+                status = _smtpController.SendMessage(email);
+                _smtpController.Dispose();
                 if (status)
-                    _clientController.Client.Item2?.Inbox.GetSubfolderAsync("Sent", _clientController.cancel.Token)
-                        .ContinueWith(second => second.Result.Append(email));
+                    _clientController.Client.Item2?.Inbox.GetSubfolderAsync("Sent", _clientController.Cancel.Token)
+                        .ContinueWith(second => second.Result.Append(email), _clientController.Cancel.Token);
             }
 
             _smtpController.Dispose();
             return status && auth;
         }
-        catch {
+        catch (Exception e){
             return false;
         }
     }
 
-    private void OnMessageFlagsChanged(object sender, MessageFlagsChangedEventArgs e) {
+    private static void OnMessageFlagsChanged(object sender, MessageFlagsChangedEventArgs e) {
         var folder = (ImapFolder) sender;
     }
 
@@ -80,10 +81,8 @@ internal class EmailUser : User {
     private void OnCountChanged(object sender, EventArgs e) {
         var folder = (ImapFolder) sender;
         if (folder.Count <= _messages.Count) return;
-        _clientController.done = new CancellationTokenSource(new TimeSpan(0, 9, 0));
         var arrived = folder.Count - _messages.Count;
-        _clientController.messagesArrived = true;
-        _clientController.done.Cancel();
+        _clientController.MessagesArrived = true;
     }
 
     /// <summary>
@@ -93,13 +92,11 @@ internal class EmailUser : User {
     ///     </para>
     /// </summary>
     public void FetchMessageSummaries() {
-        IList<IMessageSummary> fetched;
-
         do {
             try {
                 var startIndex = _messages.Count;
-                fetched = _clientController.Client.Item2.Inbox.Fetch(startIndex, -1,
-                    MessageSummaryItems.Full | MessageSummaryItems.UniqueId, _clientController.cancel.Token);
+                IList<IMessageSummary> fetched = _clientController.Client.Item2!.Inbox.Fetch(startIndex, -1,
+                    MessageSummaryItems.Full | MessageSummaryItems.UniqueId, _clientController.Cancel.Token);
                 foreach (var messageSummary in fetched) Summaries.Add(messageSummary);
                 break;
             }
@@ -110,18 +107,19 @@ internal class EmailUser : User {
         ;
     }
 
-    #region Backing fields and class wide variables
+#region Backing fields and class wide variables
 
     private readonly ClientController _clientController;
     private readonly SmtpController _smtpController;
     private ObservableCollection<MimeMessage> _messages;
-    private IMailFolder _mailfolder;
 
-    #endregion
+#endregion
 
-    #region Constructors and Destructors
+#region Constructors and Destructors
 
     private EmailUser() {
+        _messages = new ObservableCollection<MimeMessage>();
+        Summaries = new ObservableCollection<IMessageSummary>();
         _clientController = new ClientController(Secrets);
         _smtpController = new SmtpController(Secrets);
     }
@@ -155,33 +153,34 @@ internal class EmailUser : User {
         Database.Dispose();
     }
 
-    #endregion
+#endregion
 
-    #region Parameters
+#region Parameters
 
-    public bool IsClientConnected => _clientController.Client.Item2.IsConnected;
+    public bool IsClientConnected => _clientController.Client.Item2 is {IsConnected: true};
 
     public bool IsClientAuthenticated {
         get {
             if (IsClientConnected is false)
                 return false;
 
-            var status = _clientController.Client.Item2.IsAuthenticated;
+            var status = _clientController.Client.Item2 is {IsAuthenticated: true};
             if (status is false)
                 status = _clientController.ClientAuth(Username, Password);
             return status;
         }
     }
 
-    private IMailFolder Inbox {
+    private IMailFolder? Inbox {
         get {
-            _mailfolder = _clientController.Client.Item2.Inbox;
-            if (_mailfolder.IsOpen) return _mailfolder;
-            _mailfolder.Open(FolderAccess.ReadWrite);
-            _mailfolder.CountChanged += OnCountChanged;
-            _mailfolder.MessageExpunged += OnMessageExpunged;
-            _mailfolder.MessageFlagsChanged += OnMessageFlagsChanged;
-            return _mailfolder;
+            if (_clientController.Client.Item2 == null) return null;
+            var mailFolder = _clientController.Client.Item2.Inbox;
+            if (mailFolder.IsOpen) return mailFolder;
+            mailFolder.Open(FolderAccess.ReadWrite);
+            mailFolder.CountChanged += OnCountChanged;
+            mailFolder.MessageExpunged += OnMessageExpunged;
+            mailFolder.MessageFlagsChanged += OnMessageFlagsChanged;
+            return mailFolder;
         }
     }
 
@@ -190,27 +189,20 @@ internal class EmailUser : User {
     public ObservableCollection<MimeMessage> Messages {
         get {
             if (!IsClientConnected || !IsClientAuthenticated) return _messages;
-
             using var client = _clientController.Client.Item2;
-
             var unordered = _clientController.GetMessages().OrderBy(x => x.Date);
-
             ObservableCollection<MimeMessage> messages = new();
-
             foreach (var message in unordered) messages.Add(message);
-
             if (Database.CheckForChanges(messages[0].MessageId, messages.Count))
                 Database.ApplyChanges(messages, Username);
-
             _messages = messages;
-
             return _messages;
         }
-        set {
+        private set {
             foreach (var message in value)
                 _messages.Add(message);
         }
     }
 
-    #endregion
+#endregion
 }

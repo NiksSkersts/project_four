@@ -34,8 +34,8 @@ public class EmailActivity : Activity {
         _drawerLayout = FindViewById<DrawerLayout>(Resource.Id.EmailDrawer)!;
         _navigationView = FindViewById<NavigationView>(Resource.Id.nav_view)!;
 
-        _hamburgerMenu.Background = new IconDrawable(this, FontAwesomeIcons.fa_bug.ToString()).WithColor(Color.Red);
-        _writeButton.Background = new IconDrawable(this, FontAwesomeIcons.fa_500px.ToString()).WithColor(Color.Red);
+        _hamburgerMenu.Background = new IconDrawable(this, FontAwesomeIcons.fa_bars.ToString()).WithColor(Color.Red);
+        _writeButton.Background = new IconDrawable(this, FontAwesomeIcons.fa_pencil.ToString()).WithColor(Color.Red);
         _hamburgerMenu.Click += MenuClick;
         _writeButton.Click += WriteButton_Click;
         _exitButton.Click += ExitButton_Click;
@@ -48,7 +48,6 @@ public class EmailActivity : Activity {
 
     private void ExitButton_Click(object sender, EventArgs e) {
         User.Database.WipeDatabase();
-        User.EmailUserData.Dispose();
         var backToStart = new Intent(this, typeof(LoginActivity));
         StartActivity(backToStart);
         Finish();
@@ -86,7 +85,7 @@ public class EmailActivity : Activity {
 
     protected override void OnDestroy() {
         base.OnDestroy();
-        User.EmailUserData.Dispose();
+        User.EmailUserData?.Dispose();
     }
 
     private void OnItemLongClick(object sender, int e) {
@@ -111,39 +110,38 @@ public class EmailActivity : Activity {
         //This is the time to bundle up extra message data and pass it down to the next activity!
         var intent = new Intent(this, typeof(EmailBody));
 
-        var num = position;
-        var htmlbody = _messages[num].HtmlBody;
-        intent.PutExtra("PositionInDb", num);
+        var htmlBody = _messages[position].HtmlBody;
+        intent.PutExtra("PositionInDb", position);
 
         intent.PutExtra("Body",
-            htmlbody != null
-                ? new string[2] {_messages[num].HtmlBody, "html"}
-                : new string[2] {_messages[num].TextBody, "txt"});
+            htmlBody != null
+                ? new[] {_messages[position].HtmlBody, "html"}
+                : new[] {_messages[position].TextBody, "txt"});
 
-        intent.PutExtra("From", _messages[num].From.ToString());
-        intent.PutExtra("To", _messages[num].To.ToString());
-        intent.PutExtra("Subject", _messages[num].Subject);
-        if (_messages[num].Attachments != null)
+        intent.PutExtra("From", _messages[position].From.ToString());
+        intent.PutExtra("To", _messages[position].To.ToString());
+        intent.PutExtra("Subject", _messages[position].Subject);
+        if (_messages[position].Attachments != null)
             intent.PutExtra("Attachments", true);
 
-        var filepaths = DataController.SaveAttachments(_messages[num]);
-        intent.PutExtra("AttachmentLocationOnDevice", filepaths);
+        var filePaths = DataController.SaveAttachments(_messages[position]);
+        intent.PutExtra("AttachmentLocationOnDevice", filePaths);
         StartActivity(intent);
     }
 
-    #region Declaration
+#region Declaration
 
     private readonly List<int> _selectedMessages = new();
     private readonly RecyclerView _recyclerView = new(Application.Context);
-    private RecyclerView.LayoutManager _mLayoutManager;
-    private EmailsViewAdapter _adapter;
+    private RecyclerView.LayoutManager _mLayoutManager = null!;
+    private EmailsViewAdapter _adapter = null!;
     private readonly List<MimeMessage> _messages = new();
-    private DrawerLayout _drawerLayout;
-    private NavigationView _navigationView;
-    private Button _exitButton;
-    private Button _hamburgerMenu;
-    private Button _writeButton;
+    private DrawerLayout _drawerLayout = null!;
+    private NavigationView _navigationView = null!;
+    private Button _exitButton = null!;
+    private Button _hamburgerMenu = null!;
+    private Button _writeButton = null!;
     private readonly DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
 
-    #endregion
+#endregion
 }

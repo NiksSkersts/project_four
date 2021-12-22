@@ -6,9 +6,10 @@ using MimeKit;
 namespace LLU.Android.Controllers;
 
 internal static class DataController {
-    public static string GetLocalAppData() => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    private static string GetLocalAppData() =>
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-    public static string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);
+    private static string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);
 
     public static void SaveMimePart(MimePart attachment, string fileName) {
         using var stream = File.Create(GetFilePath(fileName));

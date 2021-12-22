@@ -18,17 +18,19 @@ namespace LLU.Controllers;
 ///     <para>It should be noted that an INBOX folder should be oppened before going into IDLE.</para>
 /// </summary>
 internal class IdleClientController : ClientController {
-    private readonly ClientController clientControlleŗ;
+    private readonly ClientController _clientControlleŗ;
+    private CancellationTokenSource _done;
 
     /// <summary>
     /// </summary>
     /// <param name="client"></param>
     public IdleClientController(ClientController client) {
-        clientControlleŗ = client;
-        _client = client.Client.Item2;
-        if (_client is {IsConnected: true, IsAuthenticated: true}) {
-            _client.Inbox.OpenAsync(FolderAccess.ReadOnly).ContinueWith(secondTask =>
-                _client.IdleAsync(clientControlleŗ.done.Token, clientControlleŗ.cancel.Token));
+        _done = new CancellationTokenSource();
+        _clientControlleŗ = client;
+        ImapClient = client.Client.Item2;
+        if (ImapClient is {IsConnected: true, IsAuthenticated: true}) {
+            ImapClient.Inbox.OpenAsync(FolderAccess.ReadOnly).ContinueWith(secondTask =>
+                ImapClient.IdleAsync(_done.Token, _clientControlleŗ.Cancel.Token));
             IdleAsync();
         }
     }
@@ -41,15 +43,15 @@ internal class IdleClientController : ClientController {
             try {
                 await WaitForNewMessagesAsync();
 
-                if (clientControlleŗ.messagesArrived) {
-                    User.EmailUserData.FetchMessageSummaries();
-                    clientControlleŗ.messagesArrived = false;
+                if (_clientControlleŗ.MessagesArrived) {
+                    User.EmailUserData?.FetchMessageSummaries();
+                    _clientControlleŗ.MessagesArrived = false;
                 }
             }
             catch (OperationCanceledException) {
                 break;
             }
-        } while (clientControlleŗ.cancel.IsCancellationRequested is false);
+        } while (_clientControlleŗ.Cancel.IsCancellationRequested is false);
     }
 
     /// <summary>
@@ -65,20 +67,20 @@ internal class IdleClientController : ClientController {
     /// </summary>
     private async Task WaitForNewMessagesAsync() {
         do {
+            _done = new CancellationTokenSource(new TimeSpan(0, 9, 0));
+
             try {
-                if (_client.Capabilities.HasFlag(ImapCapabilities.Idle)) {
-                    clientControlleŗ.done = new CancellationTokenSource(new TimeSpan(0, 9, 0));
+                if (ImapClient != null && ImapClient.Capabilities.HasFlag(ImapCapabilities.Idle)) {
                     try {
-                        await _client.IdleAsync(clientControlleŗ.done.Token, clientControlleŗ.cancel.Token);
+                        await ImapClient.IdleAsync(_done.Token, _clientControlleŗ.Cancel.Token);
                     }
                     finally {
-                        clientControlleŗ.done.Dispose();
-                        clientControlleŗ.done = null;
+                        _done.Dispose();
                     }
                 }
                 else {
-                    await Task.Delay(new TimeSpan(0, 1, 0), clientControlleŗ.cancel.Token);
-                    await _client.NoOpAsync(clientControlleŗ.cancel.Token);
+                    await Task.Delay(new TimeSpan(0, 1, 0), _clientControlleŗ.Cancel.Token);
+                    await ImapClient!.NoOpAsync(_clientControlleŗ.Cancel.Token);
                 }
 
                 break;

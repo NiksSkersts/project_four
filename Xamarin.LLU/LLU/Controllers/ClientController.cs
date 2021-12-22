@@ -23,17 +23,15 @@ namespace LLU.Controllers;
 ///     </para>
 /// </summary>
 internal class ClientController : IController {
-    internal ImapClient? _client;
-
-    public CancellationTokenSource cancel;
-    public CancellationTokenSource done;
+    public readonly CancellationTokenSource Cancel;
+    internal ImapClient? ImapClient;
 
     /// <summary>
     ///     On new message event -> switch to true;
     /// </summary>
-    internal bool messagesArrived = false;
+    internal bool MessagesArrived = false;
 
-    public ClientController() => cancel = new CancellationTokenSource();
+    protected ClientController() => Cancel = new CancellationTokenSource();
 
     /// <summary>
     ///     Create an instance of ClientController by providing it with JSON file MailServer and MailPort parameters.
@@ -44,8 +42,8 @@ internal class ClientController : IController {
         Port = secrets.MailPort;
     }
 
-    protected string Host { get; }
-    protected int Port { get; }
+    private string Host { get; } = string.Empty;
+    private int Port { get; }
 
     internal IMailFolder? Inbox => Client.Item1 is 0 ? Client.Item2!.Inbox : null;
 
@@ -58,25 +56,25 @@ internal class ClientController : IController {
     public Tuple<byte, ImapClient?> Client {
         get {
             byte resultCode = 0;
-            if (_client == null || _client.IsConnected is false)
+            if (ImapClient == null || ImapClient.IsConnected is false)
                 try {
-                    _client = Connect(Host, Port);
+                    ImapClient = Connect(Host, Port);
                 }
                 catch (Exception e) {
                     Console.WriteLine(e);
                     resultCode = 1;
                 }
 
-            return Tuple.Create(resultCode, _client);
+            return Tuple.Create(resultCode, ImapClient);
         }
-        private set => _client = value.Item2;
+        private set => ImapClient = value.Item2;
     }
 
     public bool ClientAuth(UserData userData) {
         if (Client.Item1 == 1 || Client.Item2?.IsConnected is false or null)
             return false;
         try {
-            Client.Item2.Authenticate(userData.Username, userData.Password, cancel.Token);
+            Client.Item2.Authenticate(userData.Username, userData.Password, Cancel.Token);
             return true;
         }
         catch (Exception) {
@@ -117,14 +115,14 @@ internal class ClientController : IController {
         var client = new ImapClient {
             ServerCertificateValidationCallback = (s, c, h, e) => true
         };
-        client.Connect(host, port, SecureSocketOptions.Auto, cancel.Token);
+        client.Connect(host, port, SecureSocketOptions.Auto, Cancel.Token);
         return client;
     }
 
     public bool DeleteMessages(ImapClient client, List<string> Ids) {
         try {
             foreach (var id in Ids)
-                client.Inbox.AddFlagsAsync(UniqueId.Parse(id), MessageFlags.Deleted, true, cancel.Token);
+                client.Inbox.AddFlagsAsync(UniqueId.Parse(id), MessageFlags.Deleted, true, Cancel.Token);
         }
         catch (Exception) {
             return false;
@@ -140,7 +138,7 @@ internal class ClientController : IController {
 
     private ObservableCollection<MimeMessage> AccessMessages(ImapClient client) {
         ObservableCollection<MimeMessage> messages = new();
-        var state = client.Inbox.Open(FolderAccess.ReadOnly, cancel.Token);
+        var state = client.Inbox.Open(FolderAccess.ReadOnly, Cancel.Token);
         if (state is not FolderAccess.None) {
             var uids = client.Inbox.Search(SearchQuery.All.And(SearchQuery.NotFlags(MessageFlags.Deleted)));
             foreach (var uid in uids)
