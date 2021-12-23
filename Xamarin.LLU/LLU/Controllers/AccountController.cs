@@ -1,4 +1,6 @@
-﻿using LLU.Android.LLU.Models;
+﻿using Android.Content;
+using LLU.Android.LLU.Models;
+using LLU.Android.Views;
 using LLU.Controllers;
 using LLU.Models;
 using static LLU.Models.User;
@@ -50,5 +52,13 @@ internal class AccountController : IController {
             Password = password
         };
         return ClientAuth(temp);
+    }
+
+    public static bool LogOut(Context context) {
+        var result = Database.WipeDatabase();
+        if (result is 0 or -1) return false;
+        var backToStart = new Intent(context, typeof(LoginActivity));
+        context.StartActivity(backToStart);
+        return true;
     }
 }

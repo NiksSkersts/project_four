@@ -47,10 +47,9 @@ public class EmailActivity : Activity {
     }
 
     private void ExitButton_Click(object sender, EventArgs e) {
-        User.Database.WipeDatabase();
-        var backToStart = new Intent(this, typeof(LoginActivity));
-        StartActivity(backToStart);
-        Finish();
+        if (AccountController.LogOut(this)) {
+            Finish();
+        }
     }
 
     private void MenuClick(object sender, EventArgs e) {

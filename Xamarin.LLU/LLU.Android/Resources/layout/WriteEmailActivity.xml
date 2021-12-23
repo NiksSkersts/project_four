@@ -1,34 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
     <Toolbar
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
         <Button
-                android:id="@+id/WE_Send"
-                android:layout_gravity="right"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"/>
-    </Toolbar>
-    <EditText
-            android:id="@+id/WE_To"
-            android:inputType="textEmailAddress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-    <EditText
-            android:id="@+id/WE_Subject"
-            android:inputType="textEmailSubject"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-    <EditText
-            android:id="@+id/WE_Body"
-            android:textColor="@android:color/white"
-            android:gravity="top"
-            android:inputType="textMultiLine"
-            android:layout_width="match_parent"
+            android:id="@+id/WE_Send"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:linksClickable="true"
-            android:textIsSelectable="true"/>
+            android:layout_gravity="right" 
+            android:hint="@string/Send" />
+    </Toolbar>
+
+    <EditText
+        android:id="@+id/WE_To"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textEmailAddress"
+        android:layout_margin="10dp"
+        android:hint="@string/To"
+        />
+
+    <EditText
+        android:id="@+id/WE_Subject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:hint="@string/Subject"
+        android:inputType="textEmailSubject" />
+
+    <EditText
+        android:id="@+id/WE_Body"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="top"
+        android:inputType="textMultiLine"
+        android:linksClickable="true"
+        android:textColor="@android:color/white"
+        android:textIsSelectable="true" 
+        android:layout_margin="10dp"/>
 </LinearLayout>

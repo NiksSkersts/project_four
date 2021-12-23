@@ -1,7 +1,10 @@
 ﻿using System;
 using Android.App;
+using Android.Graphics;
 using Android.OS;
 using Android.Widget;
+using JoanZapata.XamarinIconify;
+using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
 using LLU.Models;
 
@@ -22,6 +25,7 @@ internal class WriteEmailActivity : Activity {
         _body = FindViewById<EditText>(Resource.Id.WE_Body)!;
         _sendButton = FindViewById<Button>(Resource.Id.WE_Send)!;
         _sendButton.Click += SendButton_Click;
+        _sendButton.Background = new IconDrawable(this, FontAwesomeIcons.fa_paper_plane.ToString()).WithColor(Color.Red);
     }
 
     private void SendButton_Click(object sender, EventArgs e) {

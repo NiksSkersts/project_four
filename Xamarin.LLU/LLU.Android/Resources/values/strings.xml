@@ -9,4 +9,7 @@
     <string name="DeleteAll">Nospied, lai izdzēstu visas ziņas!</string>
     <string name="Seen">Ziņa aplūkota!</string>
     <string name="SeenAll">Visas ziņas aplūkotas!</string>
+    <string name="Subject">Ievadiet ziņas tēmu</string>
+    <string name="To">Ievadiet ziņas adresātus</string>
+    <string name="Send">Nosūtīt</string>
 </resources>

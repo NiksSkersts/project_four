@@ -9,7 +9,7 @@
             android:id="@+id/mainLinearLayout"
             android:padding="10dp"
             android:layout_margin="10dp"
-            android:backgroundTint="@android:color/white">
+            android:backgroundTint="@android:color/transparent">
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -20,20 +20,20 @@
                     android:layout_height="wrap_content"
                     android:text="Subject"
                     android:autoText="true"
-                    android:textColor="@android:color/black"
+                    android:textColor="@android:color/white"
                     android:id="@+id/Subject"/>
             <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="From"
                     android:id="@+id/from"
-                    android:textColor="@android:color/black"/>
+                    android:textColor="@android:color/white"/>
             <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Time"
                     android:id="@+id/time"
-                    android:textColor="@android:color/black"
+                    android:textColor="@android:color/white"
                     android:textAlignment="textEnd"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
