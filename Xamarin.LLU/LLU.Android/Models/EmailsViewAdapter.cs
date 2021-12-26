@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using Android.Views;
 using AndroidX.RecyclerView.Widget;
+using LLU.Models;
 using MimeKit;
 
 namespace LLU.Android.Models;
 
 internal class EmailsViewAdapter : RecyclerView.Adapter {
-    private readonly List<MimeMessage> _messages;
+    private readonly List<DatabaseData> _messages;
 
-    public EmailsViewAdapter(List<MimeMessage> messages) => _messages = messages;
+    public EmailsViewAdapter(List<DatabaseData> messages) => _messages = messages;
 
     public override int ItemCount => _messages.Count;
     public event EventHandler<int>? ItemClick;
@@ -27,8 +28,9 @@ internal class EmailsViewAdapter : RecyclerView.Adapter {
         var vh = holder as EmailsViewHolder ?? throw new InvalidOperationException();
         vh.Subject.Text = _messages[position].Subject;
         vh.From.Text = $"{_messages[position].From}";
+        var time = DateTimeOffset.FromUnixTimeSeconds(_messages[position].Time);
         vh.Time.Text =
-            $"{_messages[position].Date.Day}/{_messages[position].Date.Month}/{_messages[position].Date.Year}";
+            $"{time.Day}/{time.Month}/{time.Year}";
     }
 
     public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType) {

@@ -1,5 +1,7 @@
 ﻿using System;
 using LLU.Models;
+using MailKit.Net.Imap;
+using MailKit.Net.Smtp;
 
 namespace LLU.Controllers;
 
@@ -20,9 +22,10 @@ internal interface IController : IDisposable {
     ///     @.
     /// </param>
     /// <param name="userData.password">Password....</param>
+    /// <param name="client"></param>
     /// <returns></returns>
-    bool ClientAuth(UserData userData);
-
+    object ClientAuth(UserData userData,object client);
+    
     /// <summary>
     ///     Quick intro into resultCode:
     ///     <list type="bullet">
@@ -32,5 +35,5 @@ internal interface IController : IDisposable {
     ///     </list>
     /// </summary>
     /// <returns>byte resultCode</returns>
-    byte Connect(object data);
+    object Connect(object data);
 }

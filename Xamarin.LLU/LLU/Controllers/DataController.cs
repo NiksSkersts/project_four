@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using LLU.Models;
+using MailKit;
 using MimeKit;
+using MimeKit.Text;
 
 namespace LLU.Android.Controllers;
 
@@ -9,8 +13,50 @@ internal static class DataController {
     private static string GetLocalAppData() =>
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-    private static string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);
+    public static string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);
 
+    public static DatabaseData ConvertFromMime(MimeMessage item,UniqueId id, string folder) {
+        DatabaseData datatemp = new();
+        datatemp.Id = item.MessageId;
+        datatemp.UniqueId = id.ToString();
+        datatemp.Folder = folder;
+        datatemp.From = item.From.ToString();
+        datatemp.To = item.To.ToString();
+        datatemp.Subject = item.Subject;
+        datatemp.Time = item.Date.ToUnixTimeSeconds();
+        if (item.HtmlBody != null) {
+            datatemp.Body = item.HtmlBody;
+            datatemp.IsHtmlBody = true;
+        }
+        else {
+            datatemp.Body = item.TextBody;
+        }
+
+        return datatemp;
+    }
+    public static MimeMessage? CreateEmail(string receiversString, string sender, string? subject, string? body) {
+        subject ??= string.Empty;
+        body ??= string.Empty;
+        
+
+        var email = new MimeMessage();
+        var receivers = receiversString.Split(';');
+        var fullList = receivers.Where(mailaddress => mailaddress.Contains('@')).ToList();
+        for (var i = 0; i < fullList.Count - 1; i++)
+            fullList[i] = fullList[i].Trim();
+        try {
+            email.From.Add(MailboxAddress.Parse($"{sender}@llu.lv"));
+            foreach (var receiver in fullList)
+                email.To.Add(MailboxAddress.Parse(receiver));
+            email.Subject = subject;
+            email.Body = new TextPart(TextFormat.Text) {Text = body};
+        }
+        catch {
+            return null;
+        }
+
+        return email;
+    }
     public static void SaveMimePart(MimePart attachment, string fileName) {
         using var stream = File.Create(GetFilePath(fileName));
         attachment.Content.DecodeTo(stream);

@@ -3,7 +3,10 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using Android.Widget;
+using JoanZapata.XamarinIconify;
+using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
+using LLU.Models;
 
 namespace LLU.Android.Views;
 
@@ -16,44 +19,6 @@ namespace LLU.Android.Views;
 /// </summary>
 [Activity(Label = "LLU e-pasts", MainLauncher = true)]
 public class LoginActivity : Activity {
-    private readonly AccountController _loginAttempt = new();
-
-    protected override void OnCreate(Bundle? savedInstanceState) {
-        var userdata = _loginAttempt.Login();
-        if (userdata) StartEmailActivity();
-        base.OnCreate(savedInstanceState);
-        SetContentView(Resource.Layout.LoginActivity);
-        _layout = FindViewById<LinearLayout>(Resource.Id.mainLoginLayout)!;
-        _loginText = FindViewById<TextView>(Resource.Id.loginText)!;
-        _usernameField = FindViewById<EditText>(Resource.Id.usernamefield)!;
-        _passwordField = FindViewById<EditText>(Resource.Id.passwordfield)!;
-        _loginButton = FindViewById<Button>(Resource.Id.loginButton)!;
-        _loginButton.Click += DoLogin;
-    }
-
-    private void StartEmailActivity() {
-        Intent intent = new(Application.Context, typeof(EmailActivity));
-        StartActivity(intent);
-        Finish();
-    }
-
-    private void DoLogin(object sender, EventArgs e) {
-        var temp = _loginButton.Text;
-        _loginButton.Text = "{ fa-cog spin }";
-        if (_usernameField.Text != null && _passwordField.Text != null) {
-            var attempt = _loginAttempt.Login(_usernameField.Text, _passwordField.Text);
-            switch (attempt) {
-                case true:
-                    StartEmailActivity();
-                    break;
-                case false:
-                    MessagingController.ShowConnectionError();
-                    _loginButton.Text = temp;
-                    break;
-            }
-        }
-    }
-
 #region Declaration
 
     private EditText _usernameField = null!;
@@ -63,4 +28,44 @@ public class LoginActivity : Activity {
     private TextView _loginText = null!;
 
 #endregion
+    private readonly AccountController _loginAttempt = new();
+    protected override void OnCreate(Bundle? savedInstanceState) {
+        base.OnCreate(savedInstanceState);
+        var attempt = _loginAttempt.Login();
+        if (attempt) {
+            StartEmailActivity();
+        }
+        else {
+            SetContentView(Resource.Layout.LoginActivity);
+            _layout = FindViewById<LinearLayout>(Resource.Id.mainLoginLayout)!;
+            _loginText = FindViewById<TextView>(Resource.Id.loginText)!;
+            _usernameField = FindViewById<EditText>(Resource.Id.usernamefield)!;
+            _passwordField = FindViewById<EditText>(Resource.Id.passwordfield)!;
+            _loginButton = FindViewById<Button>(Resource.Id.loginButton)!;
+            _loginButton.Click += DoLogin;
+        }
+        
+    }
+
+    private void StartEmailActivity() {
+        Intent intent = new(Application.Context, typeof(EmailActivity));
+        StartActivity(intent);
+        Finish();
+    }
+
+    private void DoLogin(object sender, EventArgs e) {
+        if (_usernameField.Text != null && _passwordField.Text != null) {
+            var attempt = _loginAttempt.Login(new UserData {
+                Username = _usernameField.Text, Password = _passwordField.Text
+            });
+            switch (attempt) {
+                case true:
+                    StartEmailActivity();
+                    break;
+                case false:
+                    MessagingController.ShowConnectionError();
+                    break;
+            }
+        }
+    }
 }

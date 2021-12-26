@@ -4,50 +4,85 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using LLU.Android.Controllers;
 using LLU.Controllers;
 using LLU.Models;
 using MailKit;
 using MailKit.Net.Imap;
+using MailKit.Search;
 using MimeKit;
 using MimeKit.Text;
 
 namespace LLU.Android.LLU.Models;
 
 internal class EmailUser : User {
-    public bool CreateAndSendMessage(string receiversString, string subject, string body) {
-        var email = new MimeMessage();
-        var receivers = receiversString.Split(';');
-        var fullList = receivers.Where(mailaddress => mailaddress.Contains('@')).ToList();
-        for (var i = 0; i < fullList.Count - 1; i++)
-            fullList[i] = fullList[i].Trim();
-        try {
-            email.From.Add(MailboxAddress.Parse($"{Username}@llu.lv"));
-            foreach (var receiver in fullList)
-                email.To.Add(MailboxAddress.Parse(receiver));
-            email.Subject = subject;
-            email.Body = new TextPart(TextFormat.Text) {Text = body};
-            var auth = _smtpController.ClientAuth(Username, Password);
-            bool status = false;
-            if (auth) {
-                status = _smtpController.SendMessage(email);
-                _smtpController.Dispose();
-                if (status)
-                    _clientController.Client.Item2?.Inbox.GetSubfolderAsync("Sent", _clientController.Cancel.Token)
-                        .ContinueWith(second => second.Result.Append(email), _clientController.Cancel.Token);
-            }
-
-            _smtpController.Dispose();
-            return status && auth;
-        }
-        catch (Exception e){
-            return false;
-        }
+    private readonly ClientController? _clientController;
+    private ObservableCollection<DatabaseData> _messages;
+    private EmailUser() {
+        _messages = new ObservableCollection<DatabaseData>();
+        _clientController = new ClientController(Secrets);
     }
 
+    /// <summary>
+    ///     Constructor creates a new EmailUser on app launch. Assumption remains that this constructor is used at first-launch
+    ///     of the application or when app fails to connect with using database data (credential change).
+    ///     <para>
+    ///         WARNING: This does not validate connection. Validity should be done within LoginActivity and AccountManager.
+    ///         This class, for all intents and purposes, only is the middle layer between Database, Server and functionality.
+    ///     </para>
+    ///     <para name="userid">
+    ///         WARNING: One should avoid validating by char count(). Not all LLU employees or students have matr.code.
+    ///         Notable examples are students who were employees of LLU first, before they began to study.
+    ///     </para>
+    /// </summary>
+    /// <param name="username">
+    ///     WARNING: LLU only accepts username that contains the part before the @ (matr.code), while other
+    ///     email services accept either both or full username with domain.
+    /// </param>
+    /// <param name="password">Just a password. Make sure it is not null.</param>
+    public EmailUser(string username, string password) : this() {
+        username = username.ToLower().Contains("@llu.lv") ? username.Split('@')[0] : username;
+        UserData = new UserData {
+            Username = username,
+            Password = password
+        };
+        if (_clientController != null)
+            _clientController.Client = (ImapClient) _clientController.ClientAuth(UserData, _clientController.Client);
+
+    }
+    public MimeMessage CreateEmail(string toText, string? subjectText, string? bodyText) 
+        => DataController.CreateEmail(toText, UserData.Username, subjectText, bodyText);
+
+    public bool SendEmail(MimeMessage email) {
+        var status = false;
+        var auth = false;
+        try {
+            var smtpController = new SmtpController(Secrets,new UserData{
+                Username = UserData.Username,
+                Password = UserData.Password
+            });
+            auth = smtpController.IsOkay;
+            if (auth) {
+                status = smtpController.SendMessage(email);
+                smtpController.Dispose();
+                if (status)
+                    _clientController.Client.Inbox.GetSubfolderAsync("Sent", _clientController.Cancel.Token)
+                        .ContinueWith(second => second.Result.Append(email), _clientController.Cancel.Token);
+            }
+        }
+        catch (Exception e) {
+            return false;
+        }
+        return status && auth;
+    }
+
+    public MimeMessage GetMessageFromServer(string uniqueId) {
+        var message = _clientController.GetMessageFromServer(uniqueId);
+        return message;
+    }
     private static void OnMessageFlagsChanged(object sender, MessageFlagsChangedEventArgs e) {
         var folder = (ImapFolder) sender;
     }
-
     /// <summary>
     ///     Note: If you are keeping a local cache of message information (e.g. MessageSummary data) for the folder, then
     ///     you'll need to remove the message at e.Index.
@@ -95,9 +130,9 @@ internal class EmailUser : User {
         do {
             try {
                 var startIndex = _messages.Count;
-                IList<IMessageSummary> fetched = _clientController.Client.Item2!.Inbox.Fetch(startIndex, -1,
+                IList<IMessageSummary> fetched = _clientController.Client.Inbox.Fetch(startIndex, -1,
                     MessageSummaryItems.Full | MessageSummaryItems.UniqueId, _clientController.Cancel.Token);
-                foreach (var messageSummary in fetched) Summaries.Add(messageSummary);
+                foreach (MimeMessage messageSummary in fetched) Summaries.Add(messageSummary);
                 break;
             }
             catch (ImapProtocolException) { }
@@ -106,75 +141,9 @@ internal class EmailUser : User {
 
         ;
     }
-
-#region Backing fields and class wide variables
-
-    private readonly ClientController _clientController;
-    private readonly SmtpController _smtpController;
-    private ObservableCollection<MimeMessage> _messages;
-
-#endregion
-
-#region Constructors and Destructors
-
-    private EmailUser() {
-        _messages = new ObservableCollection<MimeMessage>();
-        Summaries = new ObservableCollection<IMessageSummary>();
-        _clientController = new ClientController(Secrets);
-        _smtpController = new SmtpController(Secrets);
-    }
-
-    /// <summary>
-    ///     Constructor creates a new EmailUser on app launch. Assumption remains that this constructor is used at first-launch
-    ///     of the application or when app fails to connect with using database data (credential change).
-    ///     <para>
-    ///         WARNING: This does not validate connection. Validity should be done within LoginActivity and AccountManager.
-    ///         This class, for all intents and purposes, only is the middle layer between Database, Server and functionality.
-    ///     </para>
-    ///     <para name="userid">
-    ///         WARNING: One should avoid validating by char count(). Not all LLU employees or students have matr.code.
-    ///         Notable examples are students who were employees of LLU first, before they began to study.
-    ///     </para>
-    /// </summary>
-    /// <param name="username">
-    ///     WARNING: LLU only accepts username that contains the part before the @ (matr.code), while other
-    ///     email services accept either both or full username with domain.
-    /// </param>
-    /// <param name="password">Just a password. Make sure it is not null.</param>
-    public EmailUser(string username, string password) : this() {
-        username = username.ToLower().Contains("@llu.lv") ? username.Split('@')[0] : username;
-        Username = username;
-        Password = password;
-        Database.ClientAuth(username, password);
-    }
-
-    public new void Dispose() {
-        _clientController.Dispose();
-        Database.Dispose();
-    }
-
-#endregion
-
-#region Parameters
-
-    public bool IsClientConnected => _clientController.Client.Item2 is {IsConnected: true};
-
-    public bool IsClientAuthenticated {
-        get {
-            if (IsClientConnected is false)
-                return false;
-
-            var status = _clientController.Client.Item2 is {IsAuthenticated: true};
-            if (status is false)
-                status = _clientController.ClientAuth(Username, Password);
-            return status;
-        }
-    }
-
     private IMailFolder? Inbox {
         get {
-            if (_clientController.Client.Item2 == null) return null;
-            var mailFolder = _clientController.Client.Item2.Inbox;
+            var mailFolder = _clientController.Client.Inbox;
             if (mailFolder.IsOpen) return mailFolder;
             mailFolder.Open(FolderAccess.ReadWrite);
             mailFolder.CountChanged += OnCountChanged;
@@ -183,26 +152,50 @@ internal class EmailUser : User {
             return mailFolder;
         }
     }
-
-    private ObservableCollection<IMessageSummary> Summaries { get; }
-
-    public ObservableCollection<MimeMessage> Messages {
+    public ObservableCollection<MimeMessage> Summaries { get; set; }
+    public ObservableCollection<DatabaseData> Messages {
         get {
-            if (!IsClientConnected || !IsClientAuthenticated) return _messages;
-            using var client = _clientController.Client.Item2;
-            var unordered = _clientController.GetMessages().OrderBy(x => x.Date);
-            ObservableCollection<MimeMessage> messages = new();
-            foreach (var message in unordered) messages.Add(message);
-            if (Database.CheckForChanges(messages[0].MessageId, messages.Count))
-                Database.ApplyChanges(messages, Username);
-            _messages = messages;
+            ObservableCollection<DatabaseData> messages = new();
+            
+            if (_clientController is not null) {
+                if (_clientController.Client is {IsConnected: false, IsAuthenticated: false}) return _messages;
+                
+                _clientController.Client.Inbox.Open(FolderAccess.ReadOnly);
+                
+                var fetched = _clientController.Client.Inbox.Fetch (0, -1, MessageSummaryItems.UniqueId | MessageSummaryItems.Size | MessageSummaryItems.Flags);
+                
+                foreach (var item in fetched) {
+                    var message = _clientController.Client.Inbox.GetMessage (item.UniqueId);
+                    messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name));
+                }
+                _clientController.Client.Inbox.Close();
+                
+            }
+            
+            Database.UpdateDatabase(messages);
+            List<DatabaseData> getCurrentData = new();
+            if (Database.RuntimeDatabase is not null) {
+                getCurrentData = Database.RuntimeDatabase.ReturnMail(DateTime.Now.Year, DateTime.Now.Month);
+            }
+            var temp = new ObservableCollection<DatabaseData>();
+            if (getCurrentData is not null) {
+                foreach (var data in getCurrentData) {
+                    temp.Add(data);
+                }
+            }
+            _messages = temp;
             return _messages;
         }
         private set {
             foreach (var message in value)
                 _messages.Add(message);
+
         }
     }
+    public new void Dispose() {
+        _clientController?.Dispose();
+        Database.Dispose();
+    }
 
-#endregion
+
 }

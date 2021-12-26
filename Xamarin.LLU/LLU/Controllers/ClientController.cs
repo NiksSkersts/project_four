@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
+using LLU.Android.Controllers;
 using LLU.Models;
 using MailKit;
 using MailKit.Net.Imap;
@@ -23,102 +25,71 @@ namespace LLU.Controllers;
 ///     </para>
 /// </summary>
 internal class ClientController : IController {
+    
     public readonly CancellationTokenSource Cancel;
-    internal ImapClient? ImapClient;
-
+    private ImapClient _imapClient;
+    private readonly Secrets _secrets;
     /// <summary>
     ///     On new message event -> switch to true;
     /// </summary>
     internal bool MessagesArrived = false;
-
-    protected ClientController() => Cancel = new CancellationTokenSource();
+    /// <summary>
+    ///     This is a one stop IMAP instance. It's meant to provide an automatic way of handling IMAPClient and connections
+    ///     with server.
+    ///     It's to avoid unnecessary Client related code execution within other parts of the code that could lead to unknown
+    ///     behaviour.
+    /// </summary>
+    internal ImapClient Client {
+        get {
+            if (_imapClient.IsConnected is false)
+                try {
+                    _imapClient = (ImapClient) Connect(_secrets);
+                }
+                catch (Exception e) {
+                    Console.WriteLine(e);
+                }
+            return _imapClient;
+        }
+        set => _imapClient = value;
+    }
 
     /// <summary>
     ///     Create an instance of ClientController by providing it with JSON file MailServer and MailPort parameters.
     /// </summary>
     /// <param name="secrets">Company secrets that are given to trusted people in an json file.</param>
-    public ClientController(Secrets secrets) : this() {
-        Host = secrets.MailServer;
-        Port = secrets.MailPort;
+    public ClientController(Secrets secrets){
+        Cancel = new CancellationTokenSource();
+        _imapClient = (ImapClient) Connect(secrets);
+        _secrets = secrets;
     }
-
-    private string Host { get; } = string.Empty;
-    private int Port { get; }
-
-    internal IMailFolder? Inbox => Client.Item1 is 0 ? Client.Item2!.Inbox : null;
-
-    /// <summary>
-    ///     This is a one stop IMAP instance. It's meant to provide an automatic way of handling IMAPClient and connections
-    ///     with server.
-    ///     It's to avoid unnecesary Client related code execution within other parts of the code that could lead to unknown
-    ///     behaviour.
-    /// </summary>
-    public Tuple<byte, ImapClient?> Client {
-        get {
-            byte resultCode = 0;
-            if (ImapClient == null || ImapClient.IsConnected is false)
-                try {
-                    ImapClient = Connect(Host, Port);
-                }
-                catch (Exception e) {
-                    Console.WriteLine(e);
-                    resultCode = 1;
-                }
-
-            return Tuple.Create(resultCode, ImapClient);
-        }
-        private set => ImapClient = value.Item2;
-    }
-
-    public bool ClientAuth(UserData userData) {
-        if (Client.Item1 == 1 || Client.Item2?.IsConnected is false or null)
-            return false;
-        try {
-            Client.Item2.Authenticate(userData.Username, userData.Password, Cancel.Token);
-            return true;
-        }
-        catch (Exception) {
-            return false;
-        }
-    }
-
-    public byte Connect(object data) {
+    public object Connect(object data) {
         var temp = (Secrets) data;
-        ImapClient? client = null;
-        byte resultCode;
-        try {
-            client = Connect(temp.MailServer, temp.MailPort);
-            resultCode = 0;
-        }
-        catch (Exception) {
-            resultCode = 1;
-        }
-
-        Client = Tuple.Create(resultCode, client);
-        return resultCode;
-    }
-
-    public void Dispose() {
-        Client.Item2?.Dispose();
-    }
-
-    public bool ClientAuth(string username, string password) =>
-        ClientAuth(new UserData {Username = username, Password = password});
-
-    /// <summary>
-    ///     Function creates a new connection with the server and return error code.
-    /// </summary>
-    /// <param name="host">Server host address like: imap.google.com</param>
-    /// <param name="port">Server port. Default IMAP:993</param>
-    /// <returns></returns>
-    private ImapClient Connect(string host, int port) {
-        var client = new ImapClient {
+        var client = new ImapClient() {
             ServerCertificateValidationCallback = (s, c, h, e) => true
         };
-        client.Connect(host, port, SecureSocketOptions.Auto, Cancel.Token);
+        if (!ConnectionController.IsConnectedToInternet) return client;
+        try {
+            client.Connect(temp.MailServer, temp.MailPort,SecureSocketOptions.Auto, Cancel.Token);
+        }
+        catch (Exception) {
+            //ignored
+        }
+
         return client;
     }
+    public object ClientAuth(UserData userData, object client) {
+        var imapClient = (ImapClient) client;
+        if (imapClient.IsConnected) {
+            try {
+                imapClient.Authenticate(userData.Username, userData.Password, Cancel.Token);
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
 
+        return imapClient;
+    }
     public bool DeleteMessages(ImapClient client, List<string> Ids) {
         try {
             foreach (var id in Ids)
@@ -130,21 +101,35 @@ internal class ClientController : IController {
 
         return true;
     }
+    public MimeMessage? GetMessageFromServer(string id) {
+        {
+            UniqueId queryResult;
+            try {
+                Client.Inbox.Open(FolderAccess.ReadOnly);
+                var message = Client.Inbox.GetMessage(UniqueId.Parse(id));
+                Client.Inbox.Close();
+                return message;
+            }
+            catch (Exception e) {
+                // ignored
+            }
+        }
+        return null;
+    }
 
-    public ObservableCollection<MimeMessage> GetMessages() =>
-        Client.Item1 is not 0 ? new ObservableCollection<MimeMessage>()
-        : Client.Item2 is null ? new ObservableCollection<MimeMessage>()
-        : AccessMessages(Client.Item2);
+    public ObservableCollection<MimeMessage> GetMessages() =>  AccessMessages(Client);
 
     private ObservableCollection<MimeMessage> AccessMessages(ImapClient client) {
         ObservableCollection<MimeMessage> messages = new();
+        if (!ConnectionController.IsConnectedToInternet || !Client.IsAuthenticated) return messages;
         var state = client.Inbox.Open(FolderAccess.ReadOnly, Cancel.Token);
-        if (state is not FolderAccess.None) {
-            var uids = client.Inbox.Search(SearchQuery.All.And(SearchQuery.NotFlags(MessageFlags.Deleted)));
-            foreach (var uid in uids)
-                messages.Add(client.Inbox.GetMessage(uid));
-        }
-
+        if (state is FolderAccess.None) return messages;
+        var uids = client.Inbox.Search(SearchQuery.All.And(SearchQuery.NotFlags(MessageFlags.Deleted)));
+        foreach (var uid in uids)
+            messages.Add(client.Inbox.GetMessage(uid));
         return messages;
+    }
+    public void Dispose() {
+        Client.Dispose();
     }
 }

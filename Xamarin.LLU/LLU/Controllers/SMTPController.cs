@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using LLU.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -9,74 +8,53 @@ using MimeKit;
 namespace LLU.Controllers;
 
 internal class SmtpController : IController {
-    private CancellationTokenSource _cancel;
-    private SmtpClient? _smtpClient;
-
+    private readonly CancellationTokenSource _cancel;
+    private readonly SmtpClient _smtpClient;
+    private readonly Secrets _secrets;
+    internal bool IsOkay => _smtpClient is {IsConnected: true, IsAuthenticated: true};
     /// <summary>
-    ///     SMTPclient should be disconnected after sending the message. Please make sure all paths lead to disconnection and
+    ///     SMTPClient should be disconnected after sending the message. Please make sure all paths lead to disconnection and
     ///     disposal.
     /// </summary>
     /// <param name="secrets">Company secrets that are given to trusted people in an json file.</param>
-    public SmtpController(Secrets secrets) {
+    /// <param name="userData"></param>
+    public SmtpController(Secrets secrets, UserData userData) {
+        _secrets = secrets;
         _cancel = new CancellationTokenSource();
-        Connect(secrets);
-    }
-
-    private string Host { get; set; } = string.Empty;
-    private int Port { get; set; }
-
-    private Tuple<byte, SmtpClient> Client {
-        get {
-            byte code = 0;
-
-            if (_smtpClient is {IsConnected: true})
-                return Tuple.Create(code,_smtpClient);
-            
-            SmtpClient client = new();
-            _cancel = new CancellationTokenSource();
-            client.ServerCertificateValidationCallback = (_, _, _, _) => true;
-            try {
-                client.Connect(Host, Port, SecureSocketOptions.StartTls, _cancel.Token);
-            }
-            catch (Exception e) {
-                _cancel.Cancel();
-                code = 1;
-            }
-
-            _smtpClient = client;
-            return Tuple.Create(code, client);
-        }
-    }
-
-
-    public bool ClientAuth(UserData userData) => ClientAuth(userData.Username, userData.Password);
-
-    public void Dispose() {
-        Client.Item2.Dispose();
-        _cancel.Cancel();
-    }
-
-    public byte Connect(object data) {
-        var temp = (Secrets) data;
-        Host = temp.MailServer;
-        Port = temp.SMTPPort;
-        return 0;
-    }
-
-    public bool ClientAuth(string username, string password) {
-        if (Client.Item2.IsConnected is false)
-            return false;
+        var smtp = new SmtpClient();
         try {
-            Client.Item2.Authenticate(username, password, _cancel.Token);
+            smtp = (SmtpClient) Connect(secrets);
+            smtp = (SmtpClient) ClientAuth(userData, smtp);
         }
         catch (Exception e) {
-            return false;
+            // ignored
         }
-
-        return Client.Item2.IsAuthenticated;
+        _smtpClient = smtp;
+    }
+    public object Connect(object data) {
+        SmtpClient client = new();
+        client.ServerCertificateValidationCallback = (_, _, _, _) => true;
+        try {
+            client.Connect(_secrets.MailServer, _secrets.SMTPPort, SecureSocketOptions.StartTls, _cancel.Token);
+        }
+        catch (Exception e) {
+            _cancel.Cancel();
+        }
+        return client;
     }
 
-    //todo fix SendMessage function. It sends the message successfully, yet returns false...
+    public object ClientAuth(UserData userData, object client) {
+        var smtp = (SmtpClient) client;
+        try {
+            smtp.Authenticate(userData.Username, userData.Password, _cancel.Token);
+        }
+        catch (Exception e) {
+            // ignored
+        }
+
+        return smtp;
+    }
+
     /// <summary>
     ///     Sends message via SMTP client.
     ///     <para>WARNING: Make sure you dispose of client after using it!</para>
@@ -87,13 +65,18 @@ internal class SmtpController : IController {
     public bool SendMessage(MimeMessage email) {
         bool status;
         try {
-            Client.Item2.Send(email);
-            Client.Item2.Disconnect(true);
+            _smtpClient!.Send(email);
+            _smtpClient.Disconnect(true);
             status = true;
         }
         catch (Exception e) {
             status = false;
         }
+
         return status;
+    }
+    public void Dispose() {
+        _cancel.Cancel();
+        _smtpClient?.Dispose();
     }
 }

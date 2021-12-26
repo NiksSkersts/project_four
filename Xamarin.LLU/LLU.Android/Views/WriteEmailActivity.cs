@@ -25,15 +25,20 @@ internal class WriteEmailActivity : Activity {
         _body = FindViewById<EditText>(Resource.Id.WE_Body)!;
         _sendButton = FindViewById<Button>(Resource.Id.WE_Send)!;
         _sendButton.Click += SendButton_Click;
-        _sendButton.Background = new IconDrawable(this, FontAwesomeIcons.fa_paper_plane.ToString()).WithColor(Color.Red);
+        _sendButton.Background =
+            new IconDrawable(this, FontAwesomeIcons.fa_paper_plane.ToString()).WithColor(Color.Red);
     }
 
     private void SendButton_Click(object sender, EventArgs e) {
-        var attemptToSend = User.EmailUserData != null
-                            && _body.Text != null
-                            && _subject.Text != null
-                            && _to.Text != null
-                            && User.EmailUserData.CreateAndSendMessage(_to.Text, _subject.Text, _body.Text);
+        var attemptToSend = false;
+        if (string.IsNullOrEmpty(_to.Text)) {
+            MessagingController.WarningNoRecipients();
+            return;
+        }
+        var email = User.EmailUserData?.CreateEmail(_to.Text,_subject.Text,_body.Text);
+        if (User.UserData != null) {
+            if (User.EmailUserData != null) attemptToSend = User.EmailUserData.SendEmail(email);
+        }
         if (attemptToSend)
             Finish();
         else

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using Android.App;
 using Android.OS;
 using Android.Webkit;
@@ -11,15 +10,14 @@ namespace LLU.Android.Views;
 
 [Activity(Label = "EmailBody")]
 public class EmailBody : Activity {
-    private Dictionary<string, string> _data = null!;
+    private Dictionary<string, string>? _data;
     private AttachmentDataAdapter _intentAttachmentsAdapter = null!;
     private List<string> _listviewData = null!;
 
     private Dictionary<string, string> AttachmentData {
         get {
-            if (_data.Count() is not 0)
+            if (_data is not null)
                 return _data;
-
             var filepaths = IntentAttachments;
             var names = new Dictionary<string, string>();
             if (filepaths != null)
@@ -70,7 +68,7 @@ public class EmailBody : Activity {
             To.Text = to;
 
             //Switch between two types of email. HTML and plain.
-            //plain and hmtl have different formating, and is not cross-supported in webmail.
+            //plain and hmtl have different formatting, and is not cross-supported in webmail.
             //plain text in html mode looks bad and vice-versa
             var type = $"text/{body?[1]}";
             Body.LoadDataWithBaseURL(null, body?[0] ?? string.Empty, type, "UTF-8", null);

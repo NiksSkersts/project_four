@@ -47,9 +47,7 @@ public class EmailActivity : Activity {
     }
 
     private void ExitButton_Click(object sender, EventArgs e) {
-        if (AccountController.LogOut(this)) {
-            Finish();
-        }
+        if (AccountController.LogOut(this)) Finish();
     }
 
     private void MenuClick(object sender, EventArgs e) {
@@ -62,7 +60,7 @@ public class EmailActivity : Activity {
     protected override void OnPostCreate(Bundle? savedInstanceState) {
         base.OnPostCreate(savedInstanceState);
 
-        _messages.AddRange(User.EmailUserData.Messages);
+        _messages.AddRange(User.EmailUserData!.Messages);
 
         //Initialize adapter
         _adapter = new EmailsViewAdapter(_messages);
@@ -91,40 +89,28 @@ public class EmailActivity : Activity {
         _selectedMessages.Add(e);
     }
 
-    private void ExecuteDeleteAll(object sender, EventArgs e) {
-        var uids = _messages.Select(message => message.MessageId).ToList();
-        _messages.Clear();
-    }
-
-    private void ExecuteDelete(object sender, EventArgs e) {
-        List<string> uids = new();
-        foreach (var position in _selectedMessages) {
-            uids.Add(_messages[position].MessageId);
-            _selectedMessages.Remove(position);
-        }
-    }
-
     private void OnItemClick(object sender, int position) {
         //Create an intent to launch a new activity.
         //This is the time to bundle up extra message data and pass it down to the next activity!
         var intent = new Intent(this, typeof(EmailBody));
 
-        var htmlBody = _messages[position].HtmlBody;
+        var body = _messages[position].Body;
         intent.PutExtra("PositionInDb", position);
 
         intent.PutExtra("Body",
-            htmlBody != null
-                ? new[] {_messages[position].HtmlBody, "html"}
-                : new[] {_messages[position].TextBody, "txt"});
+            _messages[position].IsHtmlBody
+                ? new[] {_messages[position].Body, "html"}
+                : new[] {_messages[position].Body, "txt"});
 
-        intent.PutExtra("From", _messages[position].From.ToString());
-        intent.PutExtra("To", _messages[position].To.ToString());
+        intent.PutExtra("From", _messages[position].From);
+        intent.PutExtra("To", _messages[position].To);
         intent.PutExtra("Subject", _messages[position].Subject);
-        if (_messages[position].Attachments != null)
+        var message = User.EmailUserData?.GetMessageFromServer(_messages[position].UniqueId);
+        if (message?.Attachments != null) {
             intent.PutExtra("Attachments", true);
-
-        var filePaths = DataController.SaveAttachments(_messages[position]);
-        intent.PutExtra("AttachmentLocationOnDevice", filePaths);
+            var filePaths = DataController.SaveAttachments(message);
+            intent.PutExtra("AttachmentLocationOnDevice", filePaths);
+        }
         StartActivity(intent);
     }
 
@@ -134,7 +120,7 @@ public class EmailActivity : Activity {
     private readonly RecyclerView _recyclerView = new(Application.Context);
     private RecyclerView.LayoutManager _mLayoutManager = null!;
     private EmailsViewAdapter _adapter = null!;
-    private readonly List<MimeMessage> _messages = new();
+    private readonly List<DatabaseData> _messages = new();
     private DrawerLayout _drawerLayout = null!;
     private NavigationView _navigationView = null!;
     private Button _exitButton = null!;

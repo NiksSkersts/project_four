@@ -56,6 +56,7 @@
         <Reference Include="Mono.Android" />
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Controllers\ConnectionController.cs" />
         <Compile Include="Models\AttachmentViewAdapter.cs" />
         <Compile Include="Models\EmailsViewAdapter.cs" />
         <Compile Include="Controllers\MessagingController.cs" />
@@ -150,6 +151,6 @@
             <SubType>Designer</SubType>
         </AndroidResource>
     </ItemGroup>
-    <Import Project="..\LLU\LLU.projitems" Label="Shared" Condition="Exists('..\LLU\LLU.projitems')" />
+    <Import Condition="Exists('..\LLU\LLU.projitems')" Label="Shared" Project="..\LLU\LLU.projitems" />
     <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
 </Project>

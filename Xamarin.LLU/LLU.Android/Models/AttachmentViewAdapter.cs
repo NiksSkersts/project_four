@@ -8,7 +8,7 @@ namespace LLU.Android.Models;
 public class AttachmentDataAdapter : BaseAdapter<string> {
     private readonly List<string> _items;
 
-    private Activity _context;
+    private readonly Activity _context;
 
     public AttachmentDataAdapter(Activity context, List<string> items) {
         _context = context;
@@ -22,9 +22,10 @@ public class AttachmentDataAdapter : BaseAdapter<string> {
     public override long GetItemId(int position) => position;
 
     public override View GetView(int position, View? convertView, ViewGroup? parent) {
+        var view = convertView;
+        if (convertView is null) view = _context.LayoutInflater.Inflate(Resource.Layout.AttachmentListTemplate, null);
         var item = _items[position];
-        if (convertView == null) return new View(Application.Context);
-        convertView.FindViewById<TextView>(Resource.Id.ALT_Name)!.Text = item;
-        return convertView;
+        view.FindViewById<TextView>(Resource.Id.ALT_Name)!.Text = item;
+        return view;
     }
 }

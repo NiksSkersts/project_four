@@ -18,19 +18,19 @@ namespace LLU.Controllers;
 ///     <para>It should be noted that an INBOX folder should be oppened before going into IDLE.</para>
 /// </summary>
 internal class IdleClientController : ClientController {
-    private readonly ClientController _clientControlleŗ;
     private CancellationTokenSource _done;
+    private readonly ClientController _clientControlleŗ;
 
     /// <summary>
     /// </summary>
     /// <param name="client"></param>
-    public IdleClientController(ClientController client) {
+    /// <param name="secrets"></param>
+    public IdleClientController(ClientController client, Secrets secrets) : base(secrets) {
         _done = new CancellationTokenSource();
         _clientControlleŗ = client;
-        ImapClient = client.Client.Item2;
-        if (ImapClient is {IsConnected: true, IsAuthenticated: true}) {
-            ImapClient.Inbox.OpenAsync(FolderAccess.ReadOnly).ContinueWith(secondTask =>
-                ImapClient.IdleAsync(_done.Token, _clientControlleŗ.Cancel.Token));
+        Client = _clientControlleŗ.Client;
+        if (Client is {IsConnected: true, IsAuthenticated: true}) {
+            Client.Inbox.OpenAsync(FolderAccess.ReadOnly).ContinueWith(second=>Client.IdleAsync(_done.Token, _clientControlleŗ.Cancel.Token));
             IdleAsync();
         }
     }
@@ -70,9 +70,9 @@ internal class IdleClientController : ClientController {
             _done = new CancellationTokenSource(new TimeSpan(0, 9, 0));
 
             try {
-                if (ImapClient != null && ImapClient.Capabilities.HasFlag(ImapCapabilities.Idle)) {
+                if (Client != null && Client.Capabilities.HasFlag(ImapCapabilities.Idle)) {
                     try {
-                        await ImapClient.IdleAsync(_done.Token, _clientControlleŗ.Cancel.Token);
+                        await Client.IdleAsync(_done.Token, _clientControlleŗ.Cancel.Token);
                     }
                     finally {
                         _done.Dispose();
@@ -80,7 +80,7 @@ internal class IdleClientController : ClientController {
                 }
                 else {
                     await Task.Delay(new TimeSpan(0, 1, 0), _clientControlleŗ.Cancel.Token);
-                    await ImapClient!.NoOpAsync(_clientControlleŗ.Cancel.Token);
+                    await Client!.NoOpAsync(_clientControlleŗ.Cancel.Token);
                 }
 
                 break;

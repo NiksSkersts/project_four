@@ -5,33 +5,33 @@
     android:orientation="vertical">
 
     <Toolbar
+        android:id="@+id/NavToolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/NavToolbar">
+        android:layout_height="wrap_content">
 
         <Button
+            android:id="@+id/HamburgerButton"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:id="@+id/HamburgerButton" />
+            android:layout_height="match_parent" />
 
         <Button
+            android:id="@+id/WriteEmailButton"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:id="@+id/WriteEmailButton" />
+            android:layout_height="match_parent" />
     </Toolbar>
 
     <androidx.drawerlayout.widget.DrawerLayout
+        android:id="@+id/EmailDrawer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="10dp"
-        android:id="@+id/EmailDrawer">
+        android:padding="10dp">
 
         <LinearLayout
+            android:id="@+id/mainLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/mainLayout"
             android:orientation="horizontal">
-            
+
         </LinearLayout>
 
         <com.google.android.material.navigation.NavigationView
@@ -42,10 +42,10 @@
             android:fitsSystemWindows="true">
 
             <Button
+                android:id="@+id/LogoutButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Atslēgties!"
-                android:id="@+id/LogoutButton" />
+                android:text="Atslēgties!" />
         </com.google.android.material.navigation.NavigationView>
     </androidx.drawerlayout.widget.DrawerLayout>
 </LinearLayout>

@@ -12,7 +12,7 @@
             android:id="@+id/WE_Send"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_gravity="right" 
+            android:layout_gravity="right"
             android:hint="@string/Send" />
     </Toolbar>
 
@@ -20,10 +20,9 @@
         android:id="@+id/WE_To"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="textEmailAddress"
         android:layout_margin="10dp"
         android:hint="@string/To"
-        />
+        android:inputType="textEmailAddress" />
 
     <EditText
         android:id="@+id/WE_Subject"
@@ -37,10 +36,10 @@
         android:id="@+id/WE_Body"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_margin="10dp"
         android:gravity="top"
         android:inputType="textMultiLine"
         android:linksClickable="true"
         android:textColor="@android:color/white"
-        android:textIsSelectable="true" 
-        android:layout_margin="10dp"/>
+        android:textIsSelectable="true" />
 </LinearLayout>
