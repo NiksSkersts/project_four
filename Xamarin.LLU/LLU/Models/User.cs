@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 namespace LLU.Models;
 
 internal abstract class User : IDisposable {
+    
     /// <summary>
     ///     Getter for database connection.
     ///     Backend uses SQLITE database that is integrated within the application.
@@ -17,7 +18,9 @@ internal abstract class User : IDisposable {
     /// </summary>
     protected static DatabaseController Database =>
         DatabaseController.DbController;
-
+    /// <summary>
+    /// 
+    /// </summary>
     protected static Secrets Secrets {
         get {
             var assets = Application.Context.Assets;
@@ -27,6 +30,7 @@ internal abstract class User : IDisposable {
             return secrets;
         }
     }
+
     /// <summary>
     ///     Normally a connection to server would fail if you supply a bad username or password,
     ///     but the goal is to make as little as possible connections to the server to preserve cycles both on server and on
@@ -39,10 +43,13 @@ internal abstract class User : IDisposable {
             var path = DataController.GetFilePath("user");
             if (File.Exists(path)) {
                 string[] lines = File.ReadAllLines(path);
-                user.Username = lines[0];
-                user.Password = lines[1];
+                if (lines.Length is 2) {
+                    user.Username = lines[0];
+                    user.Password = lines[1];
+                }
             }
-            if ((!string.IsNullOrEmpty(user.Username) 
+
+            if ((!string.IsNullOrEmpty(user.Username)
                  || !string.IsNullOrEmpty(user.Password)))
                 return user;
             Database.WipeDatabase();
@@ -50,18 +57,18 @@ internal abstract class User : IDisposable {
         }
         set {
             var path = DataController.GetFilePath("user");
-            string[] lines = File.ReadAllLines(path);
-            if (value == null) {
-                lines[0] = string.Empty;
-                lines[1] = string.Empty;
+            string[] lines = {value.Username, value.Password};
+            redo:
+            if (File.Exists(path)) {
+                File.WriteAllLines(path, lines);
             }
             else {
-                lines[0] = value.Username;
-                lines[1] = value.Password;
+                File.Create(path).Close();
+                goto redo;
             }
-            File.WriteAllLines(path, lines);
-            }
+        }
     }
+
     /// <summary>
     ///     Stores temporary data that gets deleted when the application terminates.
     ///     WARNING: all permanent data gets stored within the database!

@@ -8,6 +8,7 @@ using Android.OS;
 using Android.Widget;
 using AndroidX.DrawerLayout.Widget;
 using AndroidX.RecyclerView.Widget;
+using AndroidX.SwipeRefreshLayout.Widget;
 using Google.Android.Material.Navigation;
 using JoanZapata.XamarinIconify;
 using JoanZapata.XamarinIconify.Fonts;
@@ -21,6 +22,19 @@ namespace LLU.Android.Views;
 
 [Activity(Label = "EmailActivity")]
 public class EmailActivity : Activity {
+    private readonly List<int> _selectedMessages = new();
+    private readonly RecyclerView _recyclerView = new(Application.Context);
+    private RecyclerView.LayoutManager _mLayoutManager = null!;
+    private EmailsViewAdapter _adapter = null!;
+    private List<DatabaseData> _messages = new();
+    private DrawerLayout _drawerLayout = null!;
+    private NavigationView _navigationView = null!;
+    private Button _exitButton = null!;
+    private Button _hamburgerMenu = null!;
+    private Button _writeButton = null!;
+    private SwipeRefreshLayout _eaRefresher = null!;
+    private readonly DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
+
     protected override void OnCreate(Bundle? savedInstanceState) {
         base.OnCreate(savedInstanceState);
         Platform.Init(this, savedInstanceState);
@@ -33,12 +47,30 @@ public class EmailActivity : Activity {
         _writeButton = FindViewById<Button>(Resource.Id.WriteEmailButton)!;
         _drawerLayout = FindViewById<DrawerLayout>(Resource.Id.EmailDrawer)!;
         _navigationView = FindViewById<NavigationView>(Resource.Id.nav_view)!;
+        _eaRefresher = FindViewById<SwipeRefreshLayout>(Resource.Id.EA_Refresher)!;
 
         _hamburgerMenu.Background = new IconDrawable(this, FontAwesomeIcons.fa_bars.ToString()).WithColor(Color.Red);
         _writeButton.Background = new IconDrawable(this, FontAwesomeIcons.fa_pencil.ToString()).WithColor(Color.Red);
         _hamburgerMenu.Click += MenuClick;
         _writeButton.Click += WriteButton_Click;
         _exitButton.Click += ExitButton_Click;
+        _eaRefresher.SetColorSchemeColors(Resource.Color.material_grey_800,
+            Resource.Color.material_blue_grey_800);
+        _eaRefresher.Refresh += HandleRefresh;
+    }
+
+    private async void HandleRefresh(object sender, EventArgs e) {
+        if (User.EmailUserData is not null) {
+            foreach (var _message in User.EmailUserData.Messages) {
+                if (_message is null) continue;
+                if (!_messages.Exists(q=>q.Id.Equals(_message.Id))) {
+                    _messages.Add(_message);
+                    _adapter.NotifyItemInserted(_messages.IndexOf(_message));
+                }
+            }
+        }
+        _recyclerView.RefreshDrawableState();
+        _eaRefresher.Refreshing = false;
     }
 
     private void WriteButton_Click(object sender, EventArgs e) {
@@ -68,7 +100,7 @@ public class EmailActivity : Activity {
         _adapter.ItemLongClick += OnItemLongClick;
 
         //Initialize Recyclerview for listing emails
-        var layout = FindViewById<LinearLayout>(Resource.Id.mainLayout);
+        var layout = FindViewById<FrameLayout>(Resource.Id.container);
         _recyclerView.SetMinimumHeight((int) _displayInfo.Height);
         _recyclerView.SetMinimumWidth((int) _displayInfo.Width);
         _recyclerView.SetBackgroundColor(new Color(0, 0, 0));
@@ -77,7 +109,7 @@ public class EmailActivity : Activity {
         // Plug in the linear layout manager:
         _mLayoutManager = new LinearLayoutManager(this);
         _recyclerView.SetLayoutManager(_mLayoutManager);
-        layout?.AddView(_recyclerView);
+        layout.AddView(_recyclerView);
     }
 
     protected override void OnDestroy() {
@@ -113,20 +145,4 @@ public class EmailActivity : Activity {
         }
         StartActivity(intent);
     }
-
-#region Declaration
-
-    private readonly List<int> _selectedMessages = new();
-    private readonly RecyclerView _recyclerView = new(Application.Context);
-    private RecyclerView.LayoutManager _mLayoutManager = null!;
-    private EmailsViewAdapter _adapter = null!;
-    private readonly List<DatabaseData> _messages = new();
-    private DrawerLayout _drawerLayout = null!;
-    private NavigationView _navigationView = null!;
-    private Button _exitButton = null!;
-    private Button _hamburgerMenu = null!;
-    private Button _writeButton = null!;
-    private readonly DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
-
-#endregion
 }

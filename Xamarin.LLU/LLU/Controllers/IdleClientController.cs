@@ -44,7 +44,6 @@ internal class IdleClientController : ClientController {
                 await WaitForNewMessagesAsync();
 
                 if (_clientControlleŗ.MessagesArrived) {
-                    User.EmailUserData?.FetchMessageSummaries();
                     _clientControlleŗ.MessagesArrived = false;
                 }
             }

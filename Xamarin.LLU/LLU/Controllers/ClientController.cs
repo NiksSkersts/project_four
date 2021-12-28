@@ -116,7 +116,6 @@ internal class ClientController : IController {
         }
         return null;
     }
-
     public ObservableCollection<MimeMessage> GetMessages() =>  AccessMessages(Client);
 
     private ObservableCollection<MimeMessage> AccessMessages(ImapClient client) {

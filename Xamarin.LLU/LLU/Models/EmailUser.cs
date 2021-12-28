@@ -119,28 +119,6 @@ internal class EmailUser : User {
         var arrived = folder.Count - _messages.Count;
         _clientController.MessagesArrived = true;
     }
-
-    /// <summary>
-    ///     Fetch summary information for messages that we don't already have.
-    ///     <para>
-    ///         Protocol and I/O exceptions often result in the client getting disconnected
-    ///     </para>
-    /// </summary>
-    public void FetchMessageSummaries() {
-        do {
-            try {
-                var startIndex = _messages.Count;
-                IList<IMessageSummary> fetched = _clientController.Client.Inbox.Fetch(startIndex, -1,
-                    MessageSummaryItems.Full | MessageSummaryItems.UniqueId, _clientController.Cancel.Token);
-                foreach (MimeMessage messageSummary in fetched) Summaries.Add(messageSummary);
-                break;
-            }
-            catch (ImapProtocolException) { }
-            catch (IOException) { }
-        } while (true);
-
-        ;
-    }
     private IMailFolder? Inbox {
         get {
             var mailFolder = _clientController.Client.Inbox;
@@ -152,7 +130,6 @@ internal class EmailUser : User {
             return mailFolder;
         }
     }
-    public ObservableCollection<MimeMessage> Summaries { get; set; }
     public ObservableCollection<DatabaseData> Messages {
         get {
             ObservableCollection<DatabaseData> messages = new();

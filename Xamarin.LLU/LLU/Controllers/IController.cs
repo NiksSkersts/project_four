@@ -10,7 +10,7 @@ namespace LLU.Controllers;
 /// </summary>
 internal interface IController : IDisposable {
     /// <summary>
-    ///     Common function to authentificate user in the server. Takes username and password.
+    ///     Common function to authenticate user in the server. Takes username and password.
     ///     Disconnecting just because user inputted wrong credentials is a waste of resources, and can get you banned from the
     ///     server for a period of time.
     ///     Keep connection with the server, but try auth again instead.

@@ -24,6 +24,7 @@ public class DatabaseController : IController {
 
     internal void UpdateDatabase(ObservableCollection<DatabaseData> list) {
         foreach (var message in list) {
+            message.Id ??= message.UniqueId;
             _ = _database.InsertOrReplaceAsync(message).Result;
         }
         RuntimeDatabase = UpdateRuntimeDatabase();
