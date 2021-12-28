@@ -103,7 +103,6 @@ internal class ClientController : IController {
     }
     public MimeMessage? GetMessageFromServer(string id) {
         {
-            UniqueId queryResult;
             try {
                 Client.Inbox.Open(FolderAccess.ReadOnly);
                 var message = Client.Inbox.GetMessage(UniqueId.Parse(id));
@@ -116,18 +115,7 @@ internal class ClientController : IController {
         }
         return null;
     }
-    public ObservableCollection<MimeMessage> GetMessages() =>  AccessMessages(Client);
-
-    private ObservableCollection<MimeMessage> AccessMessages(ImapClient client) {
-        ObservableCollection<MimeMessage> messages = new();
-        if (!ConnectionController.IsConnectedToInternet || !Client.IsAuthenticated) return messages;
-        var state = client.Inbox.Open(FolderAccess.ReadOnly, Cancel.Token);
-        if (state is FolderAccess.None) return messages;
-        var uids = client.Inbox.Search(SearchQuery.All.And(SearchQuery.NotFlags(MessageFlags.Deleted)));
-        foreach (var uid in uids)
-            messages.Add(client.Inbox.GetMessage(uid));
-        return messages;
-    }
+    
     public void Dispose() {
         Client.Dispose();
     }

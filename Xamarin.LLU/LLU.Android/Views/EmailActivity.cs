@@ -93,6 +93,7 @@ public class EmailActivity : Activity {
         base.OnPostCreate(savedInstanceState);
 
         _messages.AddRange(User.EmailUserData!.Messages);
+        _messages = _messages.OrderByDescending(q => q.Time).ToList();
 
         //Initialize adapter
         _adapter = new EmailsViewAdapter(_messages);

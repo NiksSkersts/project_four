@@ -1,5 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using Android.Text;
+using MimeKit;
+using MimeKit.Text;
 using SQLite;
 
 namespace LLU.Models;

@@ -48,7 +48,6 @@ internal class EmailUser : User {
         };
         if (_clientController != null)
             _clientController.Client = (ImapClient) _clientController.ClientAuth(UserData, _clientController.Client);
-
     }
     public MimeMessage CreateEmail(string toText, string? subjectText, string? bodyText) 
         => DataController.CreateEmail(toText, UserData.Username, subjectText, bodyText);
@@ -140,9 +139,8 @@ internal class EmailUser : User {
                 _clientController.Client.Inbox.Open(FolderAccess.ReadOnly);
                 
                 var fetched = _clientController.Client.Inbox.Fetch (0, -1, MessageSummaryItems.UniqueId | MessageSummaryItems.Size | MessageSummaryItems.Flags);
-                
                 foreach (var item in fetched) {
-                    var message = _clientController.Client.Inbox.GetMessage (item.UniqueId);
+                    var message = _clientController.Client.Inbox.GetMessage (item.UniqueId); 
                     messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name));
                 }
                 _clientController.Client.Inbox.Close();

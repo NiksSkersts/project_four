@@ -19,14 +19,17 @@
 
             <TextView
                 android:id="@+id/Subject"
+                android:enabled="false"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:autoText="true"
+                android:autoText="false"
                 android:text="Subject"
                 android:textColor="@android:color/white" />
 
             <TextView
                 android:id="@+id/from"
+                android:enabled="false"
+                android:autoText="false"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="From"
@@ -34,6 +37,8 @@
 
             <TextView
                 android:id="@+id/time"
+                android:enabled="false"
+                android:autoText="false"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Time"
