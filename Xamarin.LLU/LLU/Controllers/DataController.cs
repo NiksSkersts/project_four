@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LLU.Models;
@@ -15,9 +14,10 @@ internal static class DataController {
 
     public static string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);
 
-    public static DatabaseData ConvertFromMime(MimeMessage item,UniqueId id, string folder) {
+    public static DatabaseData ConvertFromMime(MimeMessage item, UniqueId id, string folder, bool hasRead) {
         DatabaseData datatemp = new();
-        datatemp.Id = item.MessageId;
+        
+
         datatemp.UniqueId = id.ToString();
         datatemp.Folder = folder;
         datatemp.From = item.From.ToString();
@@ -32,12 +32,21 @@ internal static class DataController {
             datatemp.Body = item.TextBody;
         }
 
+        if (item.Priority == MessagePriority.Urgent ||
+            item.XPriority is XMessagePriority.High or XMessagePriority.Highest)
+            datatemp.PriorityFlag = true;
+        else
+            datatemp.PriorityFlag = false;
+        datatemp.NewFlag = hasRead;
+        
+        datatemp.Id = item.MessageId ?? datatemp.UniqueId;
         return datatemp;
     }
+
     public static MimeMessage? CreateEmail(string receiversString, string sender, string? subject, string? body) {
         subject ??= string.Empty;
         body ??= string.Empty;
-        
+
 
         var email = new MimeMessage();
         var receivers = receiversString.Split(';');
@@ -57,6 +66,7 @@ internal static class DataController {
 
         return email;
     }
+
     public static void SaveMimePart(MimePart attachment, string fileName) {
         using var stream = File.Create(GetFilePath(fileName));
         attachment.Content.DecodeTo(stream);

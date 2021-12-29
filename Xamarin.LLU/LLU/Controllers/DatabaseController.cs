@@ -1,81 +1,74 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using LLU.Controllers;
 using LLU.Models;
-using MimeKit;
 using SQLite;
 
 #nullable enable
 namespace LLU.Android.Controllers;
 
 public class DatabaseController : IController {
-    private static DatabaseController? _dbController;
+    private static DatabaseController? _dbController = new();
     private readonly SQLiteAsyncConnection _database;
-    internal MailStorageSystem? RuntimeDatabase { get; set; }
+    internal MailStorageSystem RuntimeDatabase { get; }
+    internal static DatabaseController DbController => _dbController ??= new DatabaseController();
 
     private DatabaseController() {
         _database = (SQLiteAsyncConnection) Connect(DataController.GetFilePath("data"));
-        var result = _database.DropTableAsync<DatabaseData>().Result;
-        var createTableResult = _database.CreateTableAsync<DatabaseData>().Result;
+        _ = _database.DropTableAsync<DatabaseData>().Result;
+        _ = _database.CreateTableAsync<DatabaseData>().Result;
+        RuntimeDatabase = new MailStorageSystem();
+        InitializeRuntimeDatabase();
     }
-    internal static DatabaseController DbController => _dbController ??= new DatabaseController();
 
     internal void UpdateDatabase(ObservableCollection<DatabaseData> list) {
-        foreach (var message in list) {
-            message.Id ??= message.UniqueId;
-            _ = _database.InsertOrReplaceAsync(message).Result;
-        }
-        RuntimeDatabase = UpdateRuntimeDatabase();
-    }
-    internal MailStorageSystem UpdateRuntimeDatabase() {
-        var currentData = _database.Table<DatabaseData>().ToListAsync().Result;
-        
-        var listOfYears = new List<Year>();
-        
-        foreach (var data in currentData) {
-            var utctime = DateTimeOffset.FromUnixTimeSeconds(data.Time);
-            var searchYear = listOfYears.Find(year => year.Value.Equals(utctime.Year));
-            
-            if (searchYear is null) {
-                searchYear= new Year(utctime.Year, new List<Month>());
-                listOfYears.Add(searchYear);
-            }
 
-            var searchMonth = searchYear.Months.Find(month=>month.Value.Equals(utctime.Month));
-            if (searchMonth is null) {
-                searchMonth = new Month(searchYear, utctime.Month, new List<DatabaseData>());
-                searchYear.Months.Add(searchMonth);
-            }
-            searchMonth.Mail.Add(data);
+        foreach (var message in list) {
+            InsertReplaceMessage(message);
+            _dbController?.RuntimeDatabase.AddMail(message);
         }
-        return new MailStorageSystem(listOfYears);
+
+        var currentData = _database.Table<DatabaseData>().ToListAsync().Result;
+        var currentRuntimeDb = RuntimeDatabase.ReturnMail();
+
+        if (list.Count != currentRuntimeDb.Count) {
+            foreach (var item in currentRuntimeDb) {
+                var message = list.Any(q => q.Id.Equals(item.Id));
+                if (message is false) {
+                    RemoveMessageFromDatabase(item);
+                    RuntimeDatabase.RemoveMail(item);
+                }
+            }
+        }
     }
-    
+
+    private void RemoveMessageFromDatabase(DatabaseData message) => _database.Table<DatabaseData>().DeleteAsync(q=>q.Id.Equals(message.Id));
+    private void InsertReplaceMessage(DatabaseData message) => _database.InsertOrReplaceAsync(message);
+    private List<DatabaseData> GetDataFromDatabase => _database.Table<DatabaseData>().ToListAsync().Result;
+    private void InitializeRuntimeDatabase() 
+        => _dbController?.RuntimeDatabase
+            .AddMail(GetDataFromDatabase);
+
     public object Connect(object data) 
         => new SQLiteAsyncConnection((string) data);
     public object ClientAuth(UserData temp, object? db) => _database.InsertAsync(temp, typeof(UserData)).Result;
 
-    public void Dispose() 
-        => _database.CloseAsync();
+    public void Dispose() {
+        _database.CloseAsync();
+    }
     
     public int WipeDatabase() => _database.DeleteAllAsync<DatabaseData>().Result;
 
-    public Task<UserData> GetUserData() 
-        => _database!.Table<UserData>().FirstOrDefaultAsync();
-    public Task<List<DatabaseData>> GetEmailData() 
-        => _database!.Table<DatabaseData>().ToListAsync();
-
     public Task<int> DeleteMessage(string id) {
-        var row = _database!.Table<DatabaseData>().Where(q => q.Id.Equals(id)).FirstOrDefaultAsync().Result;
+        var row = _database.Table<DatabaseData>().Where(q => q.Id.Equals(id)).FirstOrDefaultAsync().Result;
         row.DeleteFlag = true;
         return _database.InsertOrReplaceAsync(row);
     }
     private int GetCurrentMessageCount() => _database.Table<DatabaseData>().CountAsync().Result;
-
-    private string GetLatestMessageId() => _database.Table<DatabaseData>().ElementAtAsync(0).Id.ToString();
-
+    
     /// <summary>
     ///     Basic check for change. Compares the amount of messages in database and server.
     ///     This is not as reliable as the extended check, but it should be quicker to check.

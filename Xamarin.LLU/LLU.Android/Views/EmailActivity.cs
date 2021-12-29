@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Android.App;
 using Android.Content;
@@ -13,27 +14,28 @@ using Google.Android.Material.Navigation;
 using JoanZapata.XamarinIconify;
 using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
+using LLU.Android.LLU.Models;
 using LLU.Android.Models;
 using LLU.Models;
-using MimeKit;
+using MailKit;
 using Xamarin.Essentials;
 
 namespace LLU.Android.Views;
 
 [Activity(Label = "EmailActivity")]
 public class EmailActivity : Activity {
-    private readonly List<int> _selectedMessages = new();
+    private readonly DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
     private readonly RecyclerView _recyclerView = new(Application.Context);
-    private RecyclerView.LayoutManager _mLayoutManager = null!;
+    private readonly List<int> _selectedMessages = new();
     private EmailsViewAdapter _adapter = null!;
-    private List<DatabaseData> _messages = new();
     private DrawerLayout _drawerLayout = null!;
-    private NavigationView _navigationView = null!;
+    private SwipeRefreshLayout _eaRefresher = null!;
     private Button _exitButton = null!;
     private Button _hamburgerMenu = null!;
+    private List<DatabaseData> _messages = new();
+    private RecyclerView.LayoutManager _mLayoutManager = null!;
+    private NavigationView _navigationView = null!;
     private Button _writeButton = null!;
-    private SwipeRefreshLayout _eaRefresher = null!;
-    private readonly DisplayInfo _displayInfo = DeviceDisplay.MainDisplayInfo;
 
     protected override void OnCreate(Bundle? savedInstanceState) {
         base.OnCreate(savedInstanceState);
@@ -49,8 +51,10 @@ public class EmailActivity : Activity {
         _navigationView = FindViewById<NavigationView>(Resource.Id.nav_view)!;
         _eaRefresher = FindViewById<SwipeRefreshLayout>(Resource.Id.EA_Refresher)!;
 
-        _hamburgerMenu.Background = new IconDrawable(this, FontAwesomeIcons.fa_bars.ToString()).WithColor(Color.Red);
-        _writeButton.Background = new IconDrawable(this, FontAwesomeIcons.fa_pencil.ToString()).WithColor(Color.Red);
+        _hamburgerMenu.Background = new IconDrawable(this, FontAwesomeIcons.fa_bars.ToString()).WithColor(Color.Red)
+            .WithSizePx(50);
+        _writeButton.Background = new IconDrawable(this, FontAwesomeIcons.fa_pencil.ToString()).WithColor(Color.Red)
+            .WithSizePx(50);
         _hamburgerMenu.Click += MenuClick;
         _writeButton.Click += WriteButton_Click;
         _exitButton.Click += ExitButton_Click;
@@ -61,13 +65,10 @@ public class EmailActivity : Activity {
 
     private async void HandleRefresh(object sender, EventArgs e) {
         if (User.EmailUserData is not null) {
-            foreach (var _message in User.EmailUserData.Messages) {
-                if (_message is null) continue;
-                if (!_messages.Exists(q=>q.Id.Equals(_message.Id))) {
-                    _messages.Add(_message);
-                    _adapter.NotifyItemInserted(_messages.IndexOf(_message));
-                }
-            }
+            var lists = User.EmailUserData.Messages;
+            _messages = lists.ToList();
+            _adapter._messages = _messages;
+            _adapter.NotifyDataSetChanged();
         }
         _recyclerView.RefreshDrawableState();
         _eaRefresher.Refreshing = false;
@@ -92,9 +93,6 @@ public class EmailActivity : Activity {
     protected override void OnPostCreate(Bundle? savedInstanceState) {
         base.OnPostCreate(savedInstanceState);
 
-        _messages.AddRange(User.EmailUserData!.Messages);
-        _messages = _messages.OrderByDescending(q => q.Time).ToList();
-
         //Initialize adapter
         _adapter = new EmailsViewAdapter(_messages);
         _adapter.ItemClick += OnItemClick;
@@ -104,13 +102,13 @@ public class EmailActivity : Activity {
         var layout = FindViewById<FrameLayout>(Resource.Id.container);
         _recyclerView.SetMinimumHeight((int) _displayInfo.Height);
         _recyclerView.SetMinimumWidth((int) _displayInfo.Width);
-        _recyclerView.SetBackgroundColor(new Color(0, 0, 0));
         _recyclerView.SetAdapter(_adapter);
 
         // Plug in the linear layout manager:
         _mLayoutManager = new LinearLayoutManager(this);
         _recyclerView.SetLayoutManager(_mLayoutManager);
         layout.AddView(_recyclerView);
+        HandleRefresh(this,EventArgs.Empty);
     }
 
     protected override void OnDestroy() {
@@ -122,11 +120,14 @@ public class EmailActivity : Activity {
         _selectedMessages.Add(e);
     }
 
+    /// <summary>
+    ///     Create an intent to launch a new activity.
+    ///     This is the time to bundle up extra message data and pass it down to the next activity!
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="position"></param>
     private void OnItemClick(object sender, int position) {
-        //Create an intent to launch a new activity.
-        //This is the time to bundle up extra message data and pass it down to the next activity!
         var intent = new Intent(this, typeof(EmailBody));
-
         var body = _messages[position].Body;
         intent.PutExtra("PositionInDb", position);
 
@@ -144,6 +145,10 @@ public class EmailActivity : Activity {
             var filePaths = DataController.SaveAttachments(message);
             intent.PutExtra("AttachmentLocationOnDevice", filePaths);
         }
+        _messages[position].NewFlag = false;
+        User.EmailUserData?.SetMessageFlags(_messages[position].UniqueId,MessageFlags.Seen);
+        DatabaseController.DbController.UpdateDatabase(new ObservableCollection<DatabaseData>{_messages[position]});
+        _adapter.NotifyItemChanged(position);
         StartActivity(intent);
     }
 }

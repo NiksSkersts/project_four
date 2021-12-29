@@ -1,23 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
 using System.Threading;
 using LLU.Android.Controllers;
 using LLU.Controllers;
 using LLU.Models;
 using MailKit;
 using MailKit.Net.Imap;
-using MailKit.Search;
 using MimeKit;
-using MimeKit.Text;
 
 namespace LLU.Android.LLU.Models;
 
 internal class EmailUser : User {
     private readonly ClientController? _clientController;
     private ObservableCollection<DatabaseData> _messages;
+    private readonly IMailFolder? _inbox = null;
     private EmailUser() {
         _messages = new ObservableCollection<DatabaseData>();
         _clientController = new ClientController(Secrets);
@@ -65,7 +61,7 @@ internal class EmailUser : User {
                 status = smtpController.SendMessage(email);
                 smtpController.Dispose();
                 if (status)
-                    _clientController.Client.Inbox.GetSubfolderAsync("Sent", _clientController.Cancel.Token)
+                    Inbox.GetSubfolderAsync("Sent", _clientController.Cancel.Token)
                         .ContinueWith(second => second.Result.Append(email), _clientController.Cancel.Token);
             }
         }
@@ -75,9 +71,15 @@ internal class EmailUser : User {
         return status && auth;
     }
 
-    public MimeMessage GetMessageFromServer(string uniqueId) {
-        var message = _clientController.GetMessageFromServer(uniqueId);
-        return message;
+    public MimeMessage? GetMessageFromServer(string uniqueId) {
+        try {
+            return Inbox.GetMessage(UniqueId.Parse(uniqueId));
+        }
+        catch (Exception e) {
+            // ignored
+        }
+
+        return null;
     }
     private static void OnMessageFlagsChanged(object sender, MessageFlagsChangedEventArgs e) {
         var folder = (ImapFolder) sender;
@@ -118,14 +120,29 @@ internal class EmailUser : User {
         var arrived = folder.Count - _messages.Count;
         _clientController.MessagesArrived = true;
     }
-    private IMailFolder? Inbox {
+    private IMailFolder Inbox {
         get {
-            var mailFolder = _clientController.Client.Inbox;
-            if (mailFolder.IsOpen) return mailFolder;
-            mailFolder.Open(FolderAccess.ReadWrite);
-            mailFolder.CountChanged += OnCountChanged;
-            mailFolder.MessageExpunged += OnMessageExpunged;
-            mailFolder.MessageFlagsChanged += OnMessageFlagsChanged;
+            var mailFolder = _inbox;
+            if (mailFolder is null) {
+                if (_clientController.Client is{ IsConnected:true, IsAuthenticated:true}) {
+                    mailFolder = _clientController.Client.Inbox;
+                    mailFolder.CountChanged += OnCountChanged;
+                    mailFolder.MessageExpunged += OnMessageExpunged;
+                    mailFolder.MessageFlagsChanged += OnMessageFlagsChanged;
+                }
+            }
+            
+            if (mailFolder.IsOpen) {
+                if (mailFolder.Access is FolderAccess.None or FolderAccess.ReadOnly) {
+                    mailFolder.Close();
+                    mailFolder.Open(FolderAccess.ReadWrite);
+                }
+            }
+            else {
+                mailFolder.Open(FolderAccess.ReadWrite);
+            }
+
+            
             return mailFolder;
         }
     }
@@ -141,23 +158,14 @@ internal class EmailUser : User {
                 var fetched = _clientController.Client.Inbox.Fetch (0, -1, MessageSummaryItems.UniqueId | MessageSummaryItems.Size | MessageSummaryItems.Flags);
                 foreach (var item in fetched) {
                     var message = _clientController.Client.Inbox.GetMessage (item.UniqueId); 
-                    messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name));
+                    var hasRead = (item.Flags & MessageFlags.Seen) == 0;
+                    messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name,hasRead));
                 }
                 _clientController.Client.Inbox.Close();
-                
             }
             
             Database.UpdateDatabase(messages);
-            List<DatabaseData> getCurrentData = new();
-            if (Database.RuntimeDatabase is not null) {
-                getCurrentData = Database.RuntimeDatabase.ReturnMail(DateTime.Now.Year, DateTime.Now.Month);
-            }
-            var temp = new ObservableCollection<DatabaseData>();
-            if (getCurrentData is not null) {
-                foreach (var data in getCurrentData) {
-                    temp.Add(data);
-                }
-            }
+            var temp = new ObservableCollection<DatabaseData>(Database.RuntimeDatabase.ReturnMail());
             _messages = temp;
             return _messages;
         }
@@ -167,6 +175,12 @@ internal class EmailUser : User {
 
         }
     }
+
+    internal void SetMessageFlags(string uniqueId, MessageFlags flags) {
+        var uid = UniqueId.Parse(uniqueId);
+        Inbox.SetFlags(uid, flags,true,CancellationToken.None);
+    }
+
     public new void Dispose() {
         _clientController?.Dispose();
         Database.Dispose();

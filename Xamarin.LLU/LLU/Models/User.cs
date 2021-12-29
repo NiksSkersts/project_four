@@ -57,6 +57,12 @@ internal abstract class User : IDisposable {
         }
         set {
             var path = DataController.GetFilePath("user");
+            if (value is null) {
+                if (File.Exists(path)) {
+                    File.Delete(path);
+                }
+                return;
+            }
             string[] lines = {value.Username, value.Password};
             redo:
             if (File.Exists(path)) {

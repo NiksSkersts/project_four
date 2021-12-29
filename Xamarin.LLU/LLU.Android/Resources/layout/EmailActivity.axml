@@ -42,13 +42,16 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="start"
-            android:fitsSystemWindows="true">
+            android:fitsSystemWindows="true"
+            >
 
             <Button
+                android:layout_margin="10dp"
                 android:id="@+id/LogoutButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Atslēgties!" />
+                android:text="Atslēgties!"
+                />
             
         </com.google.android.material.navigation.NavigationView>
     </androidx.drawerlayout.widget.DrawerLayout>

@@ -14,11 +14,11 @@ using MimeKit;
 namespace LLU.Controllers;
 
 /// <summary>
-///     WARNING: One should be careful with Disconnect(). It's advised to disconnect from the server to free up the socket,
-///     but one should not do it too often.
+/// <para>
 ///     LLU has some kind of security in place that blocks too many attempted Connect() requests - from this app and other
 ///     third party apps like thunderbird.
-///     As far as I am aware, the suggestion is to disconnect on app exit or pause.
+///     As far as I am aware, the suggestion is to disconnect or go IDLE on app exit or pause.
+/// </para>
 ///     <para>
 ///         Imap clients were created with long-lived connections in mind. As far as I am aware, while not in active use,
 ///         they enter IDLE mode and just sync from time to time to get push notifications.
@@ -41,13 +41,13 @@ internal class ClientController : IController {
     /// </summary>
     internal ImapClient Client {
         get {
-            if (_imapClient.IsConnected is false)
-                try {
-                    _imapClient = (ImapClient) Connect(_secrets);
-                }
-                catch (Exception e) {
-                    Console.WriteLine(e);
-                }
+            if (_imapClient.IsConnected) return _imapClient;
+            try {
+                _imapClient = (ImapClient) Connect(_secrets);
+            }
+            catch (Exception e) {
+                Console.WriteLine(e);
+            }
             return _imapClient;
         }
         set => _imapClient = value;
@@ -87,7 +87,6 @@ internal class ClientController : IController {
                 return false;
             }
         }
-
         return imapClient;
     }
     public bool DeleteMessages(ImapClient client, List<string> Ids) {
@@ -101,21 +100,6 @@ internal class ClientController : IController {
 
         return true;
     }
-    public MimeMessage? GetMessageFromServer(string id) {
-        {
-            try {
-                Client.Inbox.Open(FolderAccess.ReadOnly);
-                var message = Client.Inbox.GetMessage(UniqueId.Parse(id));
-                Client.Inbox.Close();
-                return message;
-            }
-            catch (Exception e) {
-                // ignored
-            }
-        }
-        return null;
-    }
-    
     public void Dispose() {
         Client.Dispose();
     }

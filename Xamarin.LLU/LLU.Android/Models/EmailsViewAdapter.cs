@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Android.Graphics;
 using Android.Views;
 using AndroidX.RecyclerView.Widget;
 using LLU.Models;
@@ -8,7 +9,7 @@ using MimeKit;
 namespace LLU.Android.Models;
 
 internal class EmailsViewAdapter : RecyclerView.Adapter {
-    private readonly List<DatabaseData> _messages;
+    internal List<DatabaseData> _messages;
 
     public EmailsViewAdapter(List<DatabaseData> messages) => _messages = messages;
 
@@ -26,7 +27,14 @@ internal class EmailsViewAdapter : RecyclerView.Adapter {
 
     public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         var vh = holder as EmailsViewHolder ?? throw new InvalidOperationException();
+        if (_messages[position].PriorityFlag) {
+            vh.Card.SetOutlineAmbientShadowColor(Color.PaleVioletRed);
+            vh.Card.SetOutlineSpotShadowColor(Color.PaleVioletRed);
+        }
         vh.Subject.Text = _messages[position].Subject;
+        if (_messages[position].NewFlag) {
+            vh.Subject.SetTypeface(vh.Subject.Typeface,TypefaceStyle.Bold);
+        }
         vh.From.Text = $"{_messages[position].From}";
         var time = DateTimeOffset.FromUnixTimeSeconds(_messages[position].Time);
         vh.Time.Text =
