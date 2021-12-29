@@ -12,4 +12,5 @@
     <string name="Subject">Ievadiet ziņas tēmu</string>
     <string name="To">Ievadiet ziņas adresātus</string>
     <string name="Send">Nosūtīt</string>
+    <string name="MainNav">"Galvenā izvēlne"</string>
 </resources>

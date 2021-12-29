@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
-
+    <androidx.drawerlayout.widget.DrawerLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/EmailDrawer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+    
     <Toolbar
         android:id="@+id/NavToolbar"
         android:layout_width="match_parent"
@@ -20,39 +25,47 @@
             android:layout_height="match_parent" />
     </Toolbar>
 
-    <androidx.drawerlayout.widget.DrawerLayout
-        android:id="@+id/EmailDrawer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="10dp">
-
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/EA_Refresher"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-
             <FrameLayout
                 android:id="@+id/container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    </LinearLayout>
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="10dp"
+        android:elevation="10dp"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="true">
 
-        <com.google.android.material.navigation.NavigationView
-            android:id="@+id/nav_view"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="start"
-            android:fitsSystemWindows="true"
-            >
+            android:layout_height="410dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="20dp"
+                android:text="@string/MainNav"
+                android:gravity="center" />
 
             <Button
-                android:layout_margin="10dp"
                 android:id="@+id/LogoutButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Atslēgties!"
-                />
-            
-        </com.google.android.material.navigation.NavigationView>
-    </androidx.drawerlayout.widget.DrawerLayout>
-</LinearLayout>
+                android:layout_marginLeft="30dp"
+                android:layout_marginTop="30dp"
+                android:layout_marginRight="30dp"
+                android:text="Atslēgties!" />
+        </LinearLayout>
+    </com.google.android.material.navigation.NavigationView>
+</androidx.drawerlayout.widget.DrawerLayout>
+    
+
