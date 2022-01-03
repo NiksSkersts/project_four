@@ -14,33 +14,33 @@ internal static class DataController {
 
     public static string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);
 
-    public static DatabaseData ConvertFromMime(MimeMessage item, UniqueId id, string folder, bool hasRead) {
-        DatabaseData datatemp = new();
-        
-
-        datatemp.UniqueId = id.ToString();
-        datatemp.Folder = folder;
-        datatemp.From = item.From.ToString();
-        datatemp.To = item.To.ToString();
-        datatemp.Subject = item.Subject;
-        datatemp.Time = item.Date.ToUnixTimeSeconds();
+    public static DatabaseData ConvertFromMime(MimeMessage item, UniqueId id, string folder, bool hasRead,
+        bool hasBeenDeleted) {
+        DatabaseData dataTemp = new() {
+            UniqueId = id.ToString(),
+            Folder = folder,
+            From = item.From.ToString(),
+            To = item.To.ToString(),
+            Subject = item.Subject,
+            Time = item.Date.ToUnixTimeSeconds(),
+            DeleteFlag = hasBeenDeleted,
+            NewFlag = hasRead
+        };
         if (item.HtmlBody != null) {
-            datatemp.Body = item.HtmlBody;
-            datatemp.IsHtmlBody = true;
+            dataTemp.Body = item.HtmlBody;
+            dataTemp.IsHtmlBody = true;
         }
         else {
-            datatemp.Body = item.TextBody;
+            dataTemp.Body = item.TextBody;
         }
 
         if (item.Priority == MessagePriority.Urgent ||
             item.XPriority is XMessagePriority.High or XMessagePriority.Highest)
-            datatemp.PriorityFlag = true;
+            dataTemp.PriorityFlag = true;
         else
-            datatemp.PriorityFlag = false;
-        datatemp.NewFlag = hasRead;
-        
-        datatemp.Id = item.MessageId ?? datatemp.UniqueId;
-        return datatemp;
+            dataTemp.PriorityFlag = false;
+        dataTemp.Id = item.MessageId ?? dataTemp.UniqueId;
+        return dataTemp;
     }
 
     public static MimeMessage? CreateEmail(string receiversString, string sender, string? subject, string? body) {

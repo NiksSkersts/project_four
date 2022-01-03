@@ -6,6 +6,9 @@ using AndroidX.RecyclerView.Widget;
 
 namespace LLU.Android.Models;
 
+/// <summary>
+/// 
+/// </summary>
 internal class EmailsViewHolder : RecyclerView.ViewHolder {
     public EmailsViewHolder(View itemView, Action<int> listener, Action<int> longclicklistener) : base(itemView) {
         Subject = itemView.FindViewById<TextView>(Resource.Id.Subject)!;

@@ -8,6 +8,9 @@ using MimeKit;
 
 namespace LLU.Android.Models;
 
+/// <summary>
+/// 
+/// </summary>
 internal class EmailsViewAdapter : RecyclerView.Adapter {
     internal List<DatabaseData> _messages;
 

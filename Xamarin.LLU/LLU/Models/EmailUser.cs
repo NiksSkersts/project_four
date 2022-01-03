@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Threading;
 using LLU.Android.Controllers;
 using LLU.Controllers;
@@ -14,8 +16,92 @@ internal class EmailUser : User {
     private readonly ClientController? _clientController;
     private ObservableCollection<DatabaseData> _messages;
     private readonly IMailFolder? _inbox = null;
+    private List<string> _idsInMessages = new();
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    private IMailFolder Inbox {
+        get {
+            var mailFolder = _inbox;
+            if (_clientController is not null) {
+                
+                if (mailFolder is null) {
+                    if (_clientController.Client is{ IsConnected:true, IsAuthenticated:true}) {
+                        mailFolder = _clientController.Client.Inbox;
+                        mailFolder.CountChanged += OnCountChanged;
+                        mailFolder.MessageExpunged += OnMessageExpunged;
+                        mailFolder.MessageFlagsChanged += OnMessageFlagsChanged;
+                    }
+                }
+                else {
+                    if (mailFolder.IsOpen) {
+                        if (mailFolder.Access is FolderAccess.None or FolderAccess.ReadOnly) {
+                            mailFolder.Close();
+                            mailFolder.Open(FolderAccess.ReadWrite);
+                        }
+                    }
+                    else {
+                        mailFolder.Open(FolderAccess.ReadWrite);
+                    }
+                }
+            }
+            else {
+                throw new Exception("_clientController is null!");
+            }
+            return mailFolder;
+        }
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    public ObservableCollection<DatabaseData> Messages {
+        get {
+            ObservableCollection<DatabaseData> messages = new();
+            
+            if (_clientController is not null) {
+                if (_clientController.Client is {IsConnected: false, IsAuthenticated: false}) return _messages;
+                
+                var fetched = Inbox.Fetch(0, -1,
+                    MessageSummaryItems.UniqueId | MessageSummaryItems.Size | MessageSummaryItems.Flags);
+
+                var isThereAnyChanges = false;
+                
+                foreach (var item in fetched) {
+                    if (_idsInMessages.Exists(q => q.Equals(item.UniqueId.ToString()))) continue;
+                    
+                    var message = Inbox.GetMessage (item.UniqueId);
+                    var hasRead = false;
+                    var hasBeenDeleted = false;
+                    if (item.Flags is not (null or MessageFlags.None)) {
+                        if (item.Flags.Value == MessageFlags.Seen) {
+                            hasRead = true;
+                        }
+
+                        if (item.Flags.Value == MessageFlags.Deleted) {
+                            hasBeenDeleted = true;
+                        }
+                    }
+                    
+                    messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name,hasRead,hasBeenDeleted));
+                    isThereAnyChanges = true;
+                }
+
+                if (isThereAnyChanges)
+                    Database.UpdateDatabase(messages);
+            }
+            _messages = messages;
+            return _messages;
+        }
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
     private EmailUser() {
         _messages = new ObservableCollection<DatabaseData>();
+        Messages.CollectionChanged += MessagesOnCollectionChanged;
         _clientController = new ClientController(Secrets);
     }
 
@@ -42,12 +128,27 @@ internal class EmailUser : User {
             Username = username,
             Password = password
         };
-        if (_clientController != null)
+        if (_clientController != null) {
             _clientController.Client = (ImapClient) _clientController.ClientAuth(UserData, _clientController.Client);
+            foreach (var id in Messages) {
+                _idsInMessages.Add(id.Id);
+            }
+        }
     }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="toText"></param>
+    /// <param name="subjectText"></param>
+    /// <param name="bodyText"></param>
+    /// <returns></returns>
     public MimeMessage CreateEmail(string toText, string? subjectText, string? bodyText) 
         => DataController.CreateEmail(toText, UserData.Username, subjectText, bodyText);
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="email"></param>
+    /// <returns></returns>
     public bool SendEmail(MimeMessage email) {
         var status = false;
         var auth = false;
@@ -70,7 +171,11 @@ internal class EmailUser : User {
         }
         return status && auth;
     }
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="uniqueId"></param>
+    /// <returns></returns>
     public MimeMessage? GetMessageFromServer(string uniqueId) {
         try {
             return Inbox.GetMessage(UniqueId.Parse(uniqueId));
@@ -84,6 +189,9 @@ internal class EmailUser : User {
     private static void OnMessageFlagsChanged(object sender, MessageFlagsChangedEventArgs e) {
         var folder = (ImapFolder) sender;
     }
+    private void MessagesOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+    }
+    // todo implement expunge function
     /// <summary>
     ///     Note: If you are keeping a local cache of message information (e.g. MessageSummary data) for the folder, then
     ///     you'll need to remove the message at e.Index.
@@ -91,6 +199,7 @@ internal class EmailUser : User {
     /// <param name="sender"></param>
     /// <param name="e"></param>
     private void OnMessageExpunged(object sender, MessageEventArgs e) {
+        return;
         var folder = (ImapFolder) sender;
 
         if (e.Index < _messages.Count)
@@ -98,7 +207,7 @@ internal class EmailUser : User {
         else
             Console.WriteLine("{0}: message #{1} has been expunged.", folder, e.Index);
     }
-
+    //todo implement better way to get new emails.
     /// <summary>
     ///     <para>
     ///         Note: because we are keeping track of the MessageExpunged event and updating our
@@ -115,72 +224,24 @@ internal class EmailUser : User {
     /// <param name="sender"></param>
     /// <param name="e"></param>
     private void OnCountChanged(object sender, EventArgs e) {
+        return;
         var folder = (ImapFolder) sender;
         if (folder.Count <= _messages.Count) return;
         var arrived = folder.Count - _messages.Count;
         _clientController.MessagesArrived = true;
     }
-    private IMailFolder Inbox {
-        get {
-            var mailFolder = _inbox;
-            if (mailFolder is null) {
-                if (_clientController.Client is{ IsConnected:true, IsAuthenticated:true}) {
-                    mailFolder = _clientController.Client.Inbox;
-                    mailFolder.CountChanged += OnCountChanged;
-                    mailFolder.MessageExpunged += OnMessageExpunged;
-                    mailFolder.MessageFlagsChanged += OnMessageFlagsChanged;
-                }
-            }
-            
-            if (mailFolder.IsOpen) {
-                if (mailFolder.Access is FolderAccess.None or FolderAccess.ReadOnly) {
-                    mailFolder.Close();
-                    mailFolder.Open(FolderAccess.ReadWrite);
-                }
-            }
-            else {
-                mailFolder.Open(FolderAccess.ReadWrite);
-            }
-
-            
-            return mailFolder;
-        }
-    }
-    public ObservableCollection<DatabaseData> Messages {
-        get {
-            ObservableCollection<DatabaseData> messages = new();
-            
-            if (_clientController is not null) {
-                if (_clientController.Client is {IsConnected: false, IsAuthenticated: false}) return _messages;
-                
-                _clientController.Client.Inbox.Open(FolderAccess.ReadOnly);
-                
-                var fetched = _clientController.Client.Inbox.Fetch (0, -1, MessageSummaryItems.UniqueId | MessageSummaryItems.Size | MessageSummaryItems.Flags);
-                foreach (var item in fetched) {
-                    var message = _clientController.Client.Inbox.GetMessage (item.UniqueId); 
-                    var hasRead = (item.Flags & MessageFlags.Seen) == 0;
-                    messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name,hasRead));
-                }
-                _clientController.Client.Inbox.Close();
-            }
-            
-            Database.UpdateDatabase(messages);
-            var temp = new ObservableCollection<DatabaseData>(Database.RuntimeDatabase.ReturnMail());
-            _messages = temp;
-            return _messages;
-        }
-        private set {
-            foreach (var message in value)
-                _messages.Add(message);
-
-        }
-    }
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="uniqueId"></param>
+    /// <param name="flags"></param>
     internal void SetMessageFlags(string uniqueId, MessageFlags flags) {
         var uid = UniqueId.Parse(uniqueId);
         Inbox.SetFlags(uid, flags,true,CancellationToken.None);
     }
-
+    /// <summary>
+    /// 
+    /// </summary>
     public new void Dispose() {
         _clientController?.Dispose();
         Database.Dispose();

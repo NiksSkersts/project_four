@@ -5,6 +5,9 @@ using Android.Widget;
 
 namespace LLU.Android.Models;
 
+/// <summary>
+/// 
+/// </summary>
 public class AttachmentDataAdapter : BaseAdapter<string> {
     private readonly List<string> _items;
 

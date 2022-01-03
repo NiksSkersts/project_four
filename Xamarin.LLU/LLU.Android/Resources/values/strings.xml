@@ -13,4 +13,6 @@
     <string name="To">Ievadiet ziņas adresātus</string>
     <string name="Send">Nosūtīt</string>
     <string name="MainNav">"Galvenā izvēlne"</string>
+    <string name="channel_name">Jauna ziņa!</string>
+    <string name="channel_description">Jauns Paziņojums</string>
 </resources>
