@@ -5,6 +5,9 @@ using SQLite;
 
 namespace LLU.Models;
 
+/// <summary>
+/// Custom class that models the internal database structure.
+/// </summary>
 public class DatabaseData {
     [PrimaryKey] public string Id { get; set; }
     public string UniqueId { get; set; }
@@ -20,11 +23,18 @@ public class DatabaseData {
     public bool PriorityFlag { get; set; }
 }
 
+/// <summary>
+/// Defines the data that's associated with the user.
+/// </summary>
 public class UserData {
     public string Username { get; set; }
     public string Password { get; set; }
 }
 
+/// <summary>
+/// Runtime database. Stores messages in a tree that has been split into years and further on - months.
+/// Defines custom functions to deal with adding, removing or outputting to and from the database. 
+/// </summary>
 internal class MailStorageSystem {
     public List<Year> Years;
     public MailStorageSystem() => Years = new List<Year>();

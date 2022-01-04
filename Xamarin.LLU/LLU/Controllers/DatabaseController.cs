@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,12 +9,24 @@ using SQLite;
 #nullable enable
 namespace LLU.Android.Controllers;
 
+/// <summary>
+/// Controller that creates and manages a connection with SQLITE database. Also used to keep runtime database in sync with SQLITE.
+/// </summary>
 public class DatabaseController : IController {
     private static DatabaseController? _dbController = new();
     private readonly SQLiteAsyncConnection _database;
+    /// <summary>
+    /// A runtime database, that disposes of it's data after application exit.
+    /// </summary>
     internal MailStorageSystem RuntimeDatabase { get; }
+    /// <summary>
+    /// Returns a connection with the SQLITE and if the connection is null, then creates one.
+    /// </summary>
     internal static DatabaseController DbController => _dbController ??= new DatabaseController();
-
+    /// <summary>
+    /// Creates a new DatabaseController Class. This is the place where to specify SQLITE location and create it's tables.
+    /// Creates the runtime database.
+    /// </summary>
     private DatabaseController() {
         _database = (SQLiteAsyncConnection) Connect(DataController.GetFilePath("data"));
         _ = _database.DropTableAsync<DatabaseData>().Result;
@@ -23,7 +34,10 @@ public class DatabaseController : IController {
         RuntimeDatabase = new MailStorageSystem();
         InitializeRuntimeDatabase();
     }
-
+    /// <summary>
+    /// Updates both internal database and runtime database. This is the function that tries to keep both databases in sync.
+    /// </summary>
+    /// <param name="list">The emails received from the server</param>
     internal void UpdateDatabase(ObservableCollection<DatabaseData> list) {
 
         foreach (var message in list) {
@@ -44,7 +58,7 @@ public class DatabaseController : IController {
             }
         }
     }
-
+    
     private void RemoveMessageFromDatabase(DatabaseData message) => _database.Table<DatabaseData>().DeleteAsync(q=>q.Id.Equals(message.Id));
     private void InsertReplaceMessage(DatabaseData message) => _database.InsertOrReplaceAsync(message);
     private List<DatabaseData> GetDataFromDatabase => _database.Table<DatabaseData>().ToListAsync().Result;

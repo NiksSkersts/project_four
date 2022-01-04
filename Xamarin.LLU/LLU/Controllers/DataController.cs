@@ -13,6 +13,16 @@ internal static class DataController {
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
     public static string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);
+    /// <summary>
+    /// Emails received from the server are received in MimeMessage format. To be able to put them in database, they get converted to a custom class
+    /// "DatabaseData".
+    /// </summary>
+    /// <param name="item">E-mail from the server.</param>
+    /// <param name="id">Each e-mail has an unique ID for each folder.</param>
+    /// <param name="folder">Folder where the message is stored in. Mind the UniqueID part.</param>
+    /// <param name="hasRead">Has the e-mail been read?</param>
+    /// <param name="hasBeenDeleted">Has the e-mail been deleted?</param>
+    /// <returns></returns>
 
     public static DatabaseData ConvertFromMime(MimeMessage item, UniqueId id, string folder, bool hasRead,
         bool hasBeenDeleted) {
@@ -42,7 +52,14 @@ internal static class DataController {
         dataTemp.Id = item.MessageId ?? dataTemp.UniqueId;
         return dataTemp;
     }
-
+    /// <summary>
+    /// Creates an e-mail by creating a new MimeMessage.
+    /// </summary>
+    /// <param name="receiversString"> All the emails which are supposed to receive the email.</param>
+    /// <param name="sender">The one who sends it.</param>
+    /// <param name="subject">Subject of the email.</param>
+    /// <param name="body">Text, HTMl formatted body.</param>
+    /// <returns>MimeMessage or null, if the creation failed.</returns>
     public static MimeMessage? CreateEmail(string receiversString, string sender, string? subject, string? body) {
         subject ??= string.Empty;
         body ??= string.Empty;
@@ -66,17 +83,10 @@ internal static class DataController {
 
         return email;
     }
-
-    public static void SaveMimePart(MimePart attachment, string fileName) {
-        using var stream = File.Create(GetFilePath(fileName));
-        attachment.Content.DecodeTo(stream);
-    }
-
-    public static void SaveMimePart(MessagePart attachment, string fileName) {
-        using var stream = File.Create(GetFilePath(fileName));
-        attachment.Message.WriteTo(stream);
-    }
-
+    /// <summary>
+    /// Saves all the attachments that are handed alongside the MimeMessage.
+    /// </summary>
+    /// <returns>List of locations where the files have been stored at.</returns>
     public static string[] SaveAttachments(MimeMessage message) {
         var attachmentcount = message.Attachments.Count();
         if (attachmentcount == 0)
@@ -108,28 +118,5 @@ internal static class DataController {
         }
 
         return filepaths;
-    }
-
-    public static void SaveBodyParts(MimeMessage message) {
-        foreach (var bodyPart in message.BodyParts) {
-            if (!bodyPart.IsAttachment)
-                continue;
-
-            if (bodyPart is MessagePart part1) {
-                var fileName = bodyPart.ContentDisposition?.FileName;
-                var rfc822 = part1;
-                if (string.IsNullOrEmpty(fileName))
-                    fileName = "attached-message.eml";
-                using var stream = File.Create(GetFilePath(fileName));
-                rfc822.Message.WriteTo(stream);
-            }
-            else {
-                var part = (MimePart) bodyPart;
-                var fileName = part.FileName;
-
-                using var stream = File.Create(GetFilePath(fileName));
-                part.Content.DecodeTo(stream);
-            }
-        }
     }
 }

@@ -7,11 +7,19 @@ using MimeKit;
 
 namespace LLU.Controllers;
 
+/// <summary>
+/// <para>Controller whose main job is to create a connection with a server, send a message using SMTP and dispose of itself.</para>
+/// </summary>
 internal class SmtpController : IController {
     private readonly CancellationTokenSource _cancel;
     private readonly SmtpClient _smtpClient;
     private readonly Secrets _secrets;
+    
+    /// <summary>
+    /// Queries if the connection with the server is alright and won't cause any errors related to connection and authentication.
+    /// </summary>
     internal bool IsOkay => _smtpClient is {IsConnected: true, IsAuthenticated: true};
+    
     /// <summary>
     ///     SMTPClient should be disconnected after sending the message. Please make sure all paths lead to disconnection and
     ///     disposal.

@@ -6,7 +6,7 @@ using Android.Widget;
 namespace LLU.Android.Models;
 
 /// <summary>
-/// 
+/// Listview adapter that creates and updates the list to add and output all the attachments that have been bundled with the MimeMessage.
 /// </summary>
 public class AttachmentDataAdapter : BaseAdapter<string> {
     private readonly List<string> _items;

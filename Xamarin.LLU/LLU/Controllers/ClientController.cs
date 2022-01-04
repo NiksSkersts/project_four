@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading;
 using LLU.Android.Controllers;
 using LLU.Models;
 using MailKit;
 using MailKit.Net.Imap;
-using MailKit.Search;
 using MailKit.Security;
-using MimeKit;
 
 namespace LLU.Controllers;
 

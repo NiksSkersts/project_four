@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
-using System.Text;
 using Android.App;
 using LLU.Android.Controllers;
 using LLU.Android.LLU.Models;
@@ -9,6 +7,10 @@ using Newtonsoft.Json;
 
 namespace LLU.Models;
 
+/// <summary>
+/// Defines the User class from which (at the moment only) EmailUser inherits from.
+/// <para>Provides common functions or parameters that should be shared amongst all classes that inherit from this class.</para>
+/// </summary>
 internal abstract class User : IDisposable {
     
     /// <summary>

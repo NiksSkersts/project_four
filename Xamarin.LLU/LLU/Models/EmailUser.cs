@@ -12,6 +12,10 @@ using MimeKit;
 
 namespace LLU.Android.LLU.Models;
 
+/// <summary>
+/// Defines the main class that stores and deals with email data.
+/// <para>It's responsible for an easy access to inbox, messages and creation of SMTP and IMAP clients.</para>
+/// </summary>
 internal class EmailUser : User {
     private readonly ClientController? _clientController;
     private ObservableCollection<DatabaseData> _messages;

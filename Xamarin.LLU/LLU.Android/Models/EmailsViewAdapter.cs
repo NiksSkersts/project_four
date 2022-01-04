@@ -9,7 +9,7 @@ using MimeKit;
 namespace LLU.Android.Models;
 
 /// <summary>
-/// 
+/// Listview adapter that deals with creation of new emails object (EmailsDataHolder) when one gets added, removed etc.
 /// </summary>
 internal class EmailsViewAdapter : RecyclerView.Adapter {
     internal List<DatabaseData> _messages;

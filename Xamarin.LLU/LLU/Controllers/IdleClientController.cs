@@ -16,6 +16,7 @@ namespace LLU.Controllers;
 ///         client to be disposed of.
 ///     </para>
 ///     <para>It should be noted that an INBOX folder should be oppened before going into IDLE.</para>
+/// Not yet implemented!
 /// </summary>
 internal class IdleClientController : ClientController {
     private CancellationTokenSource _done;

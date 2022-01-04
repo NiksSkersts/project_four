@@ -1,12 +1,10 @@
 ﻿using System;
 using LLU.Models;
-using MailKit.Net.Imap;
-using MailKit.Net.Smtp;
 
 namespace LLU.Controllers;
 
 /// <summary>
-///     Provides a common shell for standard email controller creation.
+///     Provides a common shell for email controller creation.
 /// </summary>
 internal interface IController : IDisposable {
     /// <summary>
@@ -21,19 +19,15 @@ internal interface IController : IDisposable {
     ///     Username would normally be written like "example@gmail.com", but LLU uses only the part before
     ///     @.
     /// </param>
-    /// <param name="userData.password">Password....</param>
+    /// <param name="userData.Password">Password....</param>
     /// <param name="client"></param>
     /// <returns></returns>
     object ClientAuth(UserData userData,object client);
     
     /// <summary>
-    ///     Quick intro into resultCode:
-    ///     <list type="bullet">
-    ///         <item>0 - All good</item>
-    ///         <item>1 - Client connection failed</item>
-    ///         <item>2 - Auth failed</item>
-    ///     </list>
+    /// Common function to create a connection with the server.
+    /// <param name="data"> Client object. Either IMAP or SMTP.</param>
+    /// <returns>Returns a created client object that has been connected with the server.</returns>
     /// </summary>
-    /// <returns>byte resultCode</returns>
     object Connect(object data);
 }

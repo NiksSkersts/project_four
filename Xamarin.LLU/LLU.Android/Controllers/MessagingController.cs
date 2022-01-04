@@ -1,14 +1,11 @@
 ﻿using Android.App;
-using Android.Content;
-using Android.Content.Res;
-using Android.OS;
-using Android.Support.V4.App;
 using Android.Widget;
-using LLU.Controllers;
-using LLU.Models;
 
 namespace LLU.Android.Controllers;
 
+/// <summary>
+/// Controller that deals with toast notifications!
+/// </summary>
 internal static class MessagingController {
     public static void WarningNoRecipients() => MakeToast("Nav ievadīti ziņas saņēmēji!");
     public static void WarningOffline() => MakeToast("Nav pieejams savienojums ar tīklu!");
