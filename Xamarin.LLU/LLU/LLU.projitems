@@ -15,9 +15,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Controllers\DatabaseController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controllers\DataController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controllers\IdleClientController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controllers\INotificationController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Controllers\SMTPController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\EmailUser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\DatabaseData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\NotificationEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Secrets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\User.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

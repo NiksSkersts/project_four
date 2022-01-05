@@ -2,13 +2,17 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Threading;
 using LLU.Android.Controllers;
+using LLU.Android.Models;
+using LLU.Android.Views;
 using LLU.Controllers;
 using LLU.Models;
 using MailKit;
 using MailKit.Net.Imap;
 using MimeKit;
+using Unity;
 
 namespace LLU.Android.LLU.Models;
 
@@ -19,7 +23,7 @@ namespace LLU.Android.LLU.Models;
 internal class EmailUser : User {
     private readonly ClientController? _clientController;
     private ObservableCollection<DatabaseData> _messages;
-    private readonly IMailFolder? _inbox = null;
+    private IMailFolder? _inbox;
     private List<string> _idsInMessages = new();
     
     /// <summary>
@@ -29,79 +33,117 @@ internal class EmailUser : User {
         get {
             var mailFolder = _inbox;
             if (_clientController is not null) {
-                
-                if (mailFolder is null) {
-                    if (_clientController.Client is{ IsConnected:true, IsAuthenticated:true}) {
-                        mailFolder = _clientController.Client.Inbox;
-                        mailFolder.CountChanged += OnCountChanged;
-                        mailFolder.MessageExpunged += OnMessageExpunged;
-                        mailFolder.MessageFlagsChanged += OnMessageFlagsChanged;
-                    }
-                }
-                else {
-                    if (mailFolder.IsOpen) {
-                        if (mailFolder.Access is FolderAccess.None or FolderAccess.ReadOnly) {
-                            mailFolder.Close();
+            sec_check:
+                if (_clientController.Client.IsConnected) {
+                    if (_clientController.Client.IsAuthenticated) {
+                        if (mailFolder is null) {
+                            mailFolder = _clientController.Client.Inbox;
+                            mailFolder.CountChanged += OnCountChanged;
+                            mailFolder.MessageExpunged += OnMessageExpunged;
+                            mailFolder.MessageFlagsChanged += OnMessageFlagsChanged;
+                        }
+                        if (mailFolder.IsOpen) {
+                            if (mailFolder.Access is FolderAccess.None or FolderAccess.ReadOnly) {
+                                mailFolder.Close();
+                                mailFolder.Open(FolderAccess.ReadWrite);
+                            }
+                        }
+                        else {
                             mailFolder.Open(FolderAccess.ReadWrite);
                         }
                     }
                     else {
-                        mailFolder.Open(FolderAccess.ReadWrite);
+                        _clientController.ClientAuth(UserData!,_clientController.Client);
+                        goto sec_check;
                     }
                 }
+                
             }
             else {
                 throw new Exception("_clientController is null!");
             }
-            return mailFolder;
+
+            _inbox = mailFolder;
+            return mailFolder!;
         }
     }
     
     /// <summary>
-    /// 
+    /// <para>
+    /// Main goal is to maintain a single entity that deals with getting messages, instead of doing it all over the code.
+    /// This ensures full control over how calls are being made throughout the code, and how those calls are being filtered out.
+    /// Efficiency is the key, thus it is advised to make as less calls to the server as it it possible,
+    /// and when it is required to query the server - get as only the information that is required.
+    /// </para>
+    /// <param name="get">Messages getter gets new messages from the server. This property is meant to be like a gateway.</param>
+    /// <param name="set">Not yet implemented.
+    /// <para>
+    /// Will deal with SMTP controller.
+    /// Imagine - on added message, create a new SMTPController, send the message and dispose of the controller.
+    /// </para>
+    /// <para>
+    /// Currently this is done separately.
+    /// </para>
+    /// </param>
     /// </summary>
     public ObservableCollection<DatabaseData> Messages {
         get {
-            ObservableCollection<DatabaseData> messages = new();
-            
             if (_clientController is not null) {
                 if (_clientController.Client is {IsConnected: false, IsAuthenticated: false}) return _messages;
-                
                 var fetched = Inbox.Fetch(0, -1,
-                    MessageSummaryItems.UniqueId | MessageSummaryItems.Size | MessageSummaryItems.Flags);
-
-                var isThereAnyChanges = false;
+                    MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope | MessageSummaryItems.Size | MessageSummaryItems.Flags);
                 
-                foreach (var item in fetched) {
-                    if (_idsInMessages.Exists(q => q.Equals(item.UniqueId.ToString()))) continue;
+                if (Inbox.Count != _messages.Count) {
+                    var isThereAnyChanges = false;
+
+                    foreach (var item in fetched) {
+                        if (_idsInMessages.Exists(q => q.Equals(item.Envelope.MessageId) || q.Equals(item.UniqueId.ToString()) )) continue;
+                        var message = Inbox.GetMessage (item.UniqueId);
+                        var newFlag = true;
+                        var hasBeenDeleted = false;
+                        if (item.Flags is not (null or MessageFlags.None)) {
+                            switch (item.Flags.Value) {
+                                case MessageFlags.Seen:
+                                    newFlag = false;
+                                    break;
+                                case MessageFlags.Deleted:
+                                    hasBeenDeleted = true;
+                                    break;
+                            }
+                        }
+                        if (string.IsNullOrEmpty(item.Envelope.MessageId)) {
+                            _idsInMessages.Add(item.UniqueId.ToString());
+                        }
+                        _idsInMessages.Add(item.Envelope.MessageId);
                     
-                    var message = Inbox.GetMessage (item.UniqueId);
-                    var hasRead = false;
-                    var hasBeenDeleted = false;
-                    if (item.Flags is not (null or MessageFlags.None)) {
-                        if (item.Flags.Value == MessageFlags.Seen) {
-                            hasRead = true;
+                        _messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name,newFlag,hasBeenDeleted));
+                        isThereAnyChanges = true;
+                        
+                        if (App.Container is not null && newFlag) {
+                            App.Container.Resolve<INotificationController>().SendNotification("New E-mail",message.Subject);
                         }
 
-                        if (item.Flags.Value == MessageFlags.Deleted) {
-                            hasBeenDeleted = true;
-                        }
+                    }
+
+                    if (isThereAnyChanges) {
+                        Database.UpdateDatabase(_messages);
+                        _clientController.MessagesArrived = false;
                     }
                     
-                    messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name,hasRead,hasBeenDeleted));
-                    isThereAnyChanges = true;
                 }
-
-                if (isThereAnyChanges)
-                    Database.UpdateDatabase(messages);
+                Inbox?.Close();
             }
-            _messages = messages;
             return _messages;
+        }
+        set {
+            
         }
     }
     
     /// <summary>
-    /// 
+    /// <para>
+    /// Basic constructor that creates the class with basic functionality. This is needed for IdleClientController to inherit this class.
+    /// </para>
     /// </summary>
     private EmailUser() {
         _messages = new ObservableCollection<DatabaseData>();
@@ -134,9 +176,6 @@ internal class EmailUser : User {
         };
         if (_clientController != null) {
             _clientController.Client = (ImapClient) _clientController.ClientAuth(UserData, _clientController.Client);
-            foreach (var id in Messages) {
-                _idsInMessages.Add(id.Id);
-            }
         }
     }
     /// <summary>
@@ -228,11 +267,12 @@ internal class EmailUser : User {
     /// <param name="sender"></param>
     /// <param name="e"></param>
     private void OnCountChanged(object sender, EventArgs e) {
-        return;
         var folder = (ImapFolder) sender;
-        if (folder.Count <= _messages.Count) return;
-        var arrived = folder.Count - _messages.Count;
-        _clientController.MessagesArrived = true;
+        var inboxCount = _messages.Count;
+        if (folder.Count <= inboxCount) return;
+        var arrivedMessageCount = folder.Count - _messages.Count;
+        _clientController!.MessagesArrived = true;
+        
     }
     /// <summary>
     /// 

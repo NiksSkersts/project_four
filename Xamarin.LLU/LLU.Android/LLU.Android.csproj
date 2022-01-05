@@ -56,7 +56,10 @@
         <Reference Include="Mono.Android" />
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="App.cs" />
         <Compile Include="Controllers\ConnectionController.cs" />
+        <Compile Include="Controllers\NotificationController.cs" />
+        <Compile Include="Models\AlarmHandler.cs" />
         <Compile Include="Models\AttachmentViewAdapter.cs" />
         <Compile Include="Models\EmailsViewAdapter.cs" />
         <Compile Include="Controllers\MessagingController.cs" />
@@ -114,6 +117,7 @@
         <PackageReference Include="System.Security.Permissions" Version="6.0.0-rc.2.21480.5" />
         <PackageReference Include="System.Security.Principal.Windows" Version="6.0.0-preview.5.21301.5" />
         <PackageReference Include="System.Text.Encoding.CodePages" Version="6.0.0-rc.2.21480.5" />
+        <PackageReference Include="Unity.Container" Version="5.11.11" />
         <PackageReference Include="xamarin-iconify">
             <Version>1.0.3</Version>
         </PackageReference>
