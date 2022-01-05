@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Subject"
-        android:textAlignment="center"
+        android:gravity="center"
         android:textSize="18dp" />
 
     <TextView
@@ -27,17 +27,25 @@
         android:layout_height="wrap_content"
         android:text="To"
         android:textSize="14dp" />
-
-    <ListView
-        android:id="@+id/EB_Attachments"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="0dp" />
-
-    <android.webkit.WebView
-        android:id="@+id/EB_Body"
+        android:scrollbarAlwaysDrawVerticalTrack="true">
+        <ListView
+            android:id="@+id/EB_Attachments"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="0dp" />
+    </ScrollView>
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:backgroundTint="#ff202020"
-        android:padding="10dp" />
+        android:layout_height="match_parent">
+        <WebView
+            android:id="@+id/EB_Body"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:backgroundTint="#ff202020"
+            android:padding="10dp"
+            android:autoSizeTextType="uniform"/>
+    </ScrollView>
 </LinearLayout>

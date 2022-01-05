@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Threading;
 using LLU.Android.Controllers;
-using LLU.Android.Models;
-using LLU.Android.Views;
 using LLU.Controllers;
 using LLU.Models;
 using MailKit;
@@ -26,9 +23,7 @@ internal class EmailUser : User {
     private IMailFolder? _inbox;
     private List<string> _idsInMessages = new();
     
-    /// <summary>
-    /// 
-    /// </summary>
+    //todo implement better way to get new emails.
     private IMailFolder Inbox {
         get {
             var mailFolder = _inbox;
@@ -38,9 +33,41 @@ internal class EmailUser : User {
                     if (_clientController.Client.IsAuthenticated) {
                         if (mailFolder is null) {
                             mailFolder = _clientController.Client.Inbox;
-                            mailFolder.CountChanged += OnCountChanged;
-                            mailFolder.MessageExpunged += OnMessageExpunged;
-                            mailFolder.MessageFlagsChanged += OnMessageFlagsChanged;
+                            
+                            mailFolder.CountChanged += (sender, args) => {
+                                var folder = (ImapFolder) sender;
+                                var inboxCount = _messages.Count;
+                                if (folder.Count <= inboxCount) return;
+                                var arrivedMessageCount = folder.Count - _messages.Count;
+                                _clientController!.MessagesArrived = true;
+                            };
+                            
+                            mailFolder.MessageExpunged += (object sender, MessageEventArgs e) => {
+                                if (e.Index < _messages.Count)
+                                    _messages.RemoveAt(e.Index);
+                            };
+                            mailFolder.MessageFlagsChanged += (sender, args) => {
+                                foreach (var message in _messages) {
+                                        if (!message.UniqueId.Equals(args.UniqueId.ToString())) continue;
+                                        switch (args.Flags) {
+                                            case MessageFlags.None:
+                                                break;
+                                            case MessageFlags.Seen:
+                                                message.NewFlag = true;
+                                                break;
+                                        }
+                                }
+                            };
+                            
+                            mailFolder.MessagesVanished += (sender, args) => {
+                                foreach (var uid in args.UniqueIds) {
+                                    foreach (var message in _messages) {
+                                        if (!message.UniqueId.Equals(uid.ToString())) continue;
+                                        var res = _messages.Remove(message);
+                                        var res1 = _idsInMessages.Remove(message.Id);
+                                    }
+                                }
+                            };
                         }
                         if (mailFolder.IsOpen) {
                             if (mailFolder.Access is FolderAccess.None or FolderAccess.ReadOnly) {
@@ -95,9 +122,14 @@ internal class EmailUser : User {
                 
                 if (Inbox.Count != _messages.Count) {
                     var isThereAnyChanges = false;
-
+                    List<string> ids = new List<string>();
                     foreach (var item in fetched) {
-                        if (_idsInMessages.Exists(q => q.Equals(item.Envelope.MessageId) || q.Equals(item.UniqueId.ToString()) )) continue;
+                        if (_idsInMessages.Exists(q =>
+                                q.Equals(item.Envelope.MessageId) || q.Equals(item.UniqueId.ToString()))) {
+                            ids.Add(item.Envelope.MessageId);
+                            continue;
+                            
+                        };
                         var message = Inbox.GetMessage (item.UniqueId);
                         var newFlag = true;
                         var hasBeenDeleted = false;
@@ -112,9 +144,9 @@ internal class EmailUser : User {
                             }
                         }
                         if (string.IsNullOrEmpty(item.Envelope.MessageId)) {
-                            _idsInMessages.Add(item.UniqueId.ToString());
+                            ids.Add(item.UniqueId.ToString());
                         }
-                        _idsInMessages.Add(item.Envelope.MessageId);
+                        ids.Add(item.Envelope.MessageId);
                     
                         _messages.Add(DataController.ConvertFromMime(message,item.UniqueId,item.Folder.Name,newFlag,hasBeenDeleted));
                         isThereAnyChanges = true;
@@ -125,6 +157,18 @@ internal class EmailUser : User {
 
                     }
 
+                    _idsInMessages = ids;
+                    for (int i = 0; i < _messages.Count; i++) {
+                        bool exists = false;
+                        foreach (var id in ids) {
+                            if (_messages[i].Id.Equals(id) || _messages[i].UniqueId.Equals(id)) {
+                                exists = true;
+                            }
+                        }
+                        if (exists is false) {
+                            isThereAnyChanges =_messages.Remove(_messages[i]);
+                        }
+                    }
                     if (isThereAnyChanges) {
                         Database.UpdateDatabase(_messages);
                         _clientController.MessagesArrived = false;
@@ -229,50 +273,7 @@ internal class EmailUser : User {
 
         return null;
     }
-    private static void OnMessageFlagsChanged(object sender, MessageFlagsChangedEventArgs e) {
-        var folder = (ImapFolder) sender;
-    }
     private void MessagesOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-    }
-    // todo implement expunge function
-    /// <summary>
-    ///     Note: If you are keeping a local cache of message information (e.g. MessageSummary data) for the folder, then
-    ///     you'll need to remove the message at e.Index.
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void OnMessageExpunged(object sender, MessageEventArgs e) {
-        return;
-        var folder = (ImapFolder) sender;
-
-        if (e.Index < _messages.Count)
-            _messages.RemoveAt(e.Index);
-        else
-            Console.WriteLine("{0}: message #{1} has been expunged.", folder, e.Index);
-    }
-    //todo implement better way to get new emails.
-    /// <summary>
-    ///     <para>
-    ///         Note: because we are keeping track of the MessageExpunged event and updating our
-    ///         'messages' list, we know that if we get a CountChanged event and folder.Count is
-    ///         larger than messages.Count, then it means that new messages have arrived.
-    ///     </para>
-    ///     Note: your first instinct may be to fetch these new messages now, but you cannot do
-    ///     that in this event handler (the ImapFolder is not re-entrant).
-    ///     Instead, cancel the `done` token and update our state so that we know new messages
-    ///     have arrived. We'll fetch the summaries for these new messages later...
-    ///     <para>
-    ///     </para>
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void OnCountChanged(object sender, EventArgs e) {
-        var folder = (ImapFolder) sender;
-        var inboxCount = _messages.Count;
-        if (folder.Count <= inboxCount) return;
-        var arrivedMessageCount = folder.Count - _messages.Count;
-        _clientController!.MessagesArrived = true;
-        
     }
     /// <summary>
     /// 

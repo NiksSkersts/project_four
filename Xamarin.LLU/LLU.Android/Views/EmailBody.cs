@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Android.App;
 using Android.OS;
+using Android.Text;
 using Android.Webkit;
 using Android.Widget;
 using LLU.Android.Models;
@@ -62,15 +63,13 @@ public class EmailBody : Activity {
             var from = $"Nosūtītājs <{Intent.Extras.GetString("From")}>";
             var to = $"Saņēmējs <{Intent.Extras.GetString("To")}>";
             var subject = Intent.Extras.GetString("Subject");
-
             Subject.Text = subject;
             From.Text = from;
             To.Text = to;
-
+            var type = $"text/{body?[1]}";
             //Switch between two types of email. HTML and plain.
             //plain and hmtl have different formatting, and is not cross-supported in webmail.
             //plain text in html mode looks bad and vice-versa
-            var type = $"text/{body?[1]}";
             Body.LoadDataWithBaseURL(null, body?[0] ?? string.Empty, type, "UTF-8", null);
         }
 
