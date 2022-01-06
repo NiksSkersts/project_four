@@ -16,7 +16,7 @@ public interface IMailStorageSystem {
     /// <summary>
     ///     Wrapper around single mail function to add multiple mails.
     /// </summary>
-    /// <param name="mail"></param>
+    /// <param name="mail">DatabaseData object</param>
     public void AddMail(List<DatabaseData> mail);
     /// <summary>
     ///     Add a single mail to the runtime database.
