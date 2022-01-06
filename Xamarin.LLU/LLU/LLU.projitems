@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Controllers\SMTPController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\EmailUser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\DatabaseData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\MailStorageSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\NotificationEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Secrets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\User.cs">

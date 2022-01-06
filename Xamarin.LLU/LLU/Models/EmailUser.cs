@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Threading;
 using LLU.Android.Controllers;
 using LLU.Controllers;
@@ -24,6 +23,15 @@ internal class EmailUser : User {
     private List<string> _idsInMessages = new();
     
     //todo implement better way to get new emails.
+    /// <summary>
+    /// <para>Maintains connection with IMAP server and forces reconnect if CLIENT seems to be unavailable.</para>
+    /// <para>Initializes IMailFolder and makes sure it's OPEN before it gets accessed.
+    /// Maintains IMailFolder events. As they are small, events are embedded as lambda statements. <br></br>
+    /// todo: refactor lambdas as functions if they grow larger.
+    /// </para>
+    /// </summary>
+    /// <exception cref="Exception"> null client controller shouldn't happen unless INBOX gets accessed before LOGIN is completed.
+    /// For the sake of debugging - throw an exception.</exception>
     private IMailFolder Inbox {
         get {
             var mailFolder = _inbox;
@@ -179,19 +187,18 @@ internal class EmailUser : User {
             }
             return _messages;
         }
-        set {
-            
-        }
+        //todo merge SMTP functionality
+        set => throw new NotImplementedException("Messages being set!");
     }
     
     /// <summary>
     /// <para>
-    /// Basic constructor that creates the class with basic functionality. This is needed for IdleClientController to inherit this class.
+    /// Basic constructor that creates the class with basic functionality.
+    /// This is required for IdleClientController to inherit this class.
     /// </para>
     /// </summary>
     private EmailUser() {
         _messages = new ObservableCollection<DatabaseData>();
-        Messages.CollectionChanged += MessagesOnCollectionChanged;
         _clientController = new ClientController(Secrets);
     }
 
@@ -199,12 +206,12 @@ internal class EmailUser : User {
     ///     Constructor creates a new EmailUser on app launch. Assumption remains that this constructor is used at first-launch
     ///     of the application or when app fails to connect with using database data (credential change).
     ///     <para>
-    ///         WARNING: This does not validate connection. Validity should be done within LoginActivity and AccountManager.
+    ///         WARNING: This does not validate connection. Validation should be done within LoginActivity and AccountManager.
     ///         This class, for all intents and purposes, only is the middle layer between Database, Server and functionality.
     ///     </para>
     ///     <para name="userid">
-    ///         WARNING: One should avoid validating by char count(). Not all LLU employees or students have matr.code.
-    ///         Notable examples are students who were employees of LLU first, before they began to study.
+    ///         WARNING: One should avoid validating by char count(). Not all LLU employees or students have standard (length == 7) usernames. 
+    ///         Notable examples are employees and students who came to work before they began to study.
     ///     </para>
     /// </summary>
     /// <param name="username">
@@ -223,25 +230,26 @@ internal class EmailUser : User {
         }
     }
     /// <summary>
-    /// 
+    /// Converts inputted text data to MimeMessage.
     /// </summary>
-    /// <param name="toText"></param>
-    /// <param name="subjectText"></param>
-    /// <param name="bodyText"></param>
+    /// <param name="toText">Email addresses seperated by char ';'</param>
+    /// <param name="subjectText">Self-explanatory</param>
+    /// <param name="bodyText">Self-explanatory</param>
     /// <returns></returns>
-    public MimeMessage CreateEmail(string toText, string? subjectText, string? bodyText) 
+    public static MimeMessage CreateEmail(string toText, string? subjectText, string? bodyText) 
         => DataController.CreateEmail(toText, UserData.Username, subjectText, bodyText);
     /// <summary>
-    /// 
+    /// Sends email by creating and SMTP controller and pushing MimeMessage to the server.
+    /// The same message is then added to folder "Sent".
     /// </summary>
     /// <param name="email"></param>
     /// <returns></returns>
     public bool SendEmail(MimeMessage email) {
         var status = false;
-        var auth = false;
+        bool auth;
         try {
-            var smtpController = new SmtpController(Secrets,new UserData{
-                Username = UserData.Username,
+            var smtpController = new SmtpController(Secrets,new UserData {
+                Username = UserData!.Username,
                 Password = UserData.Password
             });
             auth = smtpController.IsOkay;
@@ -249,34 +257,36 @@ internal class EmailUser : User {
                 status = smtpController.SendMessage(email);
                 smtpController.Dispose();
                 if (status)
-                    Inbox.GetSubfolderAsync("Sent", _clientController.Cancel.Token)
-                        .ContinueWith(second => second.Result.Append(email), _clientController.Cancel.Token);
+                    Inbox.GetSubfolderAsync("Sent", CancellationToken.None)
+                        .ContinueWith(second => second.Result.Append(email), CancellationToken.None);
             }
         }
-        catch (Exception e) {
+        catch (Exception) {
             return false;
         }
         return status && auth;
     }
     /// <summary>
-    /// 
+    /// Gets a single MimeMessage from the server by using its uniqueID.
     /// </summary>
-    /// <param name="uniqueId"></param>
-    /// <returns></returns>
+    /// <param name="uniqueId">
+    /// UniqueID is an ID that's completely unique for that email in that specific folder.
+    /// Imagine database table ID. It's unique in the specified table, but it can repeat in the whole database.
+    /// </param>
+    /// <returns> MimeMessage unless the specified UniqueID doesn't exist, then it returns null.</returns>
     public MimeMessage? GetMessageFromServer(string uniqueId) {
         try {
             return Inbox.GetMessage(UniqueId.Parse(uniqueId));
         }
-        catch (Exception e) {
+        catch (Exception) {
             // ignored
         }
 
         return null;
     }
-    private void MessagesOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-    }
     /// <summary>
-    /// 
+    /// Sets a message flag in the server. For example, if user reads an email,
+    /// this flag is then sent to the server alongside the specified unique ID.
     /// </summary>
     /// <param name="uniqueId"></param>
     /// <param name="flags"></param>
@@ -285,7 +295,8 @@ internal class EmailUser : User {
         Inbox.SetFlags(uid, flags,true,CancellationToken.None);
     }
     /// <summary>
-    /// 
+    /// Makes sure the client controller and database gets closed and disposed of.
+    /// This is done to prevent zombie connection accumulation server-side.
     /// </summary>
     public new void Dispose() {
         _clientController?.Dispose();

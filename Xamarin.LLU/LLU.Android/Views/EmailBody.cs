@@ -8,13 +8,23 @@ using LLU.Android.Models;
 using Xamarin.Essentials;
 
 namespace LLU.Android.Views;
-
+/// <summary>
+/// <para>
+/// To show email body one can use textview and webview. Textview is able to render basic HTML
+/// and while it's ideal for 90% of the time, textview fails completely at rendering complex HTML messages.
+/// Webview on other hand perfectly renders both text and HTML sources,
+/// but has it's own downfalls - like  horizontal scroll.
+/// </para>
+/// </summary>
 [Activity(Label = "EmailBody")]
 public class EmailBody : Activity {
     private Dictionary<string, string>? _data;
     private AttachmentDataAdapter _intentAttachmentsAdapter = null!;
     private List<string> _listviewData = null!;
 
+    /// <summary>
+    /// Provides activity with attachment by parsing file paths and names of those attachments.
+    /// </summary>
     private Dictionary<string, string> AttachmentData {
         get {
             if (_data is not null)
@@ -26,15 +36,17 @@ public class EmailBody : Activity {
                     var name = path.Split('/');
                     names.Add(name[^1], path);
                 }
-
             _data = names;
             return _data;
         }
     }
-
+    /// <summary>
+    /// Gets filepaths strings from Intent extras.
+    /// </summary>
     private IEnumerable<string>? IntentAttachments {
         get {
-            var attachmentsAvailable = Intent is {Extras: { }} && Intent.Extras.GetBoolean("Attachments");
+            var attachmentsAvailable = 
+                Intent is {Extras: { }} && Intent.Extras.GetBoolean("Attachments");
             if (Intent?.Extras != null && attachmentsAvailable)
                 return Intent.Extras.GetStringArray("AttachmentLocationOnDevice")!;
 
@@ -67,9 +79,6 @@ public class EmailBody : Activity {
             From.Text = from;
             To.Text = to;
             var type = $"text/{body?[1]}";
-            //Switch between two types of email. HTML and plain.
-            //plain and hmtl have different formatting, and is not cross-supported in webmail.
-            //plain text in html mode looks bad and vice-versa
             Body.LoadDataWithBaseURL(null, body?[0] ?? string.Empty, type, "UTF-8", null);
         }
 
