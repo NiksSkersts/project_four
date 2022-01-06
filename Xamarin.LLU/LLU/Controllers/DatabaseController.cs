@@ -19,7 +19,7 @@ public class DatabaseController : IController {
     /// <summary>
     /// A runtime database, that disposes of it's data after application exit.
     /// </summary>
-    internal MailStorageSystem RuntimeDatabase { get; }
+    private MailStorageSystem RuntimeDatabase { get; }
     /// <summary>
     /// Returns a connection with the SQLITE and if the connection is null, then creates one.
     /// </summary>

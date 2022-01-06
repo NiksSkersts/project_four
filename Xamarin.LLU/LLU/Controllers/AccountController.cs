@@ -4,7 +4,6 @@ using LLU.Android.LLU.Models;
 using LLU.Android.Views;
 using LLU.Controllers;
 using LLU.Models;
-using static LLU.Models.User;
 
 namespace LLU.Android.Controllers;
 
@@ -29,7 +28,7 @@ internal class AccountController : IController {
         if (string.IsNullOrEmpty(userData.Username) || string.IsNullOrEmpty(userData.Password))
             return status;
         try {
-            EmailUserData = (EmailUser) ClientAuth(userData, null);
+            User.EmailUserData = (EmailUser) ClientAuth(userData, null);
             status = true;
         }
         catch (Exception e) {
