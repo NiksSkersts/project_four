@@ -4,7 +4,7 @@ using Android.Widget;
 namespace LLU.Android.Controllers;
 
 /// <summary>
-/// Controller that deals with toast notifications!
+///     Controller that deals with toast notifications!
 /// </summary>
 internal static class MessagingController {
     public static void WarningNoRecipients() => MakeToast("Nav ievadīti ziņas saņēmēji!");

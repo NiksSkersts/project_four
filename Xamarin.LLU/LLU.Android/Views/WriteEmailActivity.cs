@@ -7,7 +7,6 @@ using JoanZapata.XamarinIconify;
 using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
 using LLU.Android.LLU.Models;
-using LLU.Models;
 
 namespace LLU.Android.Views;
 
@@ -36,10 +35,11 @@ internal class WriteEmailActivity : Activity {
             MessagingController.WarningNoRecipients();
             return;
         }
-        var email = EmailUser.CreateEmail(_to.Text,_subject.Text,_body.Text);
-        if (User.UserData != null) {
-            if (User.EmailUserData != null) attemptToSend = User.EmailUserData.SendEmail(email);
-        }
+
+        var email = EmailUser.CreateEmail(_to.Text, _subject.Text, _body.Text);
+        if (User.UserData != null)
+            if (User.EmailUserData != null)
+                attemptToSend = User.EmailUserData.SendEmail(email);
         if (attemptToSend)
             Finish();
         else

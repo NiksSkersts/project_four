@@ -22,12 +22,12 @@ internal interface IController : IDisposable {
     /// <param name="userData.Password">Password....</param>
     /// <param name="client"></param>
     /// <returns></returns>
-    object ClientAuth(UserData userData,object client);
-    
+    object ClientAuth(UserData userData, object client);
+
     /// <summary>
-    /// Common function to create a connection with the server.
-    /// <param name="data"> Client object. Either IMAP or SMTP.</param>
-    /// <returns>Returns a created client object that has been connected with the server.</returns>
+    ///     Common function to create a connection with the server.
+    ///     <param name="data"> Client object. Either IMAP or SMTP.</param>
+    ///     <returns>Returns a created client object that has been connected with the server.</returns>
     /// </summary>
     object Connect(object data);
 }

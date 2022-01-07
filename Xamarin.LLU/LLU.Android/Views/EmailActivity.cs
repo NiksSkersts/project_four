@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using Android.App;
 using Android.Content;
@@ -25,7 +24,6 @@ using Xamarin.Essentials;
 namespace LLU.Android.Views;
 
 /// <summary>
-/// 
 /// </summary>
 [Activity(Label = "EmailActivity",
     LaunchMode = LaunchMode.SingleTop)]
@@ -41,7 +39,7 @@ public class EmailActivity : Activity {
     private RecyclerView.LayoutManager _mLayoutManager = null!;
     private NavigationView _navigationView = null!;
     private Button _writeButton = null!;
-    
+
     protected override void OnCreate(Bundle? savedInstanceState) {
         base.OnCreate(savedInstanceState);
         Platform.Init(this, savedInstanceState);
@@ -56,12 +54,12 @@ public class EmailActivity : Activity {
         _navigationView = FindViewById<NavigationView>(Resource.Id.nav_view)!;
         _eaRefresher = FindViewById<SwipeRefreshLayout>(Resource.Id.EA_Refresher)!;
 
-        _hamburgerMenu.Background = 
+        _hamburgerMenu.Background =
             new IconDrawable(this, FontAwesomeIcons.fa_bars
-                .ToString())
+                    .ToString())
                 .WithColor(Color.Red)
                 .WithSizePx(50);
-        _writeButton.Background = 
+        _writeButton.Background =
             new IconDrawable(this, FontAwesomeIcons.fa_pencil.ToString())
                 .WithColor(Color.Red)
                 .WithSizePx(50);
@@ -73,18 +71,16 @@ public class EmailActivity : Activity {
         _eaRefresher.Refresh += HandleRefresh;
         CreateNotificationFromIntent(Intent);
     }
-    protected override void OnNewIntent(Intent intent)
-    {
+
+    protected override void OnNewIntent(Intent intent) {
         CreateNotificationFromIntent(intent);
     }
 
-    void CreateNotificationFromIntent(Intent intent)
-    {
-        if (intent?.Extras != null)
-        {
-            string title = intent.GetStringExtra(NotificationController.TitleKey);
-            string message = intent.GetStringExtra(NotificationController.MessageKey);
-            App.Container.Resolve<INotificationController>().ReceiveNotification(title,message);
+    private void CreateNotificationFromIntent(Intent intent) {
+        if (intent?.Extras != null) {
+            var title = intent.GetStringExtra(NotificationController.TitleKey);
+            var message = intent.GetStringExtra(NotificationController.MessageKey);
+            App.Container.Resolve<INotificationController>().ReceiveNotification(title, message);
         }
     }
 
@@ -95,6 +91,7 @@ public class EmailActivity : Activity {
             _adapter._messages = _messages;
             _adapter.NotifyDataSetChanged();
         }
+
         _recyclerView.RefreshDrawableState();
         _eaRefresher.Refreshing = false;
     }
@@ -133,7 +130,7 @@ public class EmailActivity : Activity {
         _mLayoutManager = new LinearLayoutManager(this);
         _recyclerView.SetLayoutManager(_mLayoutManager);
         layout.AddView(_recyclerView);
-        HandleRefresh(this,EventArgs.Empty);
+        HandleRefresh(this, EventArgs.Empty);
     }
 
     protected override void OnDestroy() {
@@ -142,10 +139,10 @@ public class EmailActivity : Activity {
     }
 
     /// <summary>
-    /// <para>
-    /// On item long click select a message.
-    /// Show a small menu that allows to delete or move a message
-    /// </para>
+    ///     <para>
+    ///         On item long click select a message.
+    ///         Show a small menu that allows to delete or move a message
+    ///     </para>
     /// </summary>
     /// <exception cref="NotImplementedException">NOT YET IMPLEMENTED.</exception>
     private void OnItemLongClick(object sender, int e) {
@@ -177,8 +174,9 @@ public class EmailActivity : Activity {
             var filePaths = DataController.SaveAttachments(message);
             intent.PutExtra("AttachmentLocationOnDevice", filePaths);
         }
+
         _messages[position].NewFlag = false;
-        User.EmailUserData?.SetMessageFlags(_messages[position].UniqueId,MessageFlags.Seen);
+        User.EmailUserData?.SetMessageFlags(_messages[position].UniqueId, MessageFlags.Seen);
         RuntimeController.Instance.UpdateDatabase(_messages[position]);
         _adapter.NotifyItemChanged(position);
         StartActivity(intent);

@@ -79,16 +79,16 @@
     </ItemGroup>
     <ItemGroup>
         <AndroidResource Include="Resources\font\calibri.ttf">
-          <SubType>Designer</SubType>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <SubType>Designer</SubType>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </AndroidResource>
         <AndroidResource Include="Resources\font\cambria.ttf">
-          <SubType>Designer</SubType>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <SubType>Designer</SubType>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </AndroidResource>
         <AndroidResource Include="Resources\font\consolas.ttf">
-          <SubType>Designer</SubType>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <SubType>Designer</SubType>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </AndroidResource>
         <AndroidResource Include="Resources\layout\EmailBodyActivity.xml" />
         <AndroidResource Include="Resources\layout\EmailActivity.axml" />

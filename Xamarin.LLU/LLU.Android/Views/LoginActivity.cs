@@ -17,16 +17,8 @@ namespace LLU.Android.Views;
 /// </summary>
 [Activity(Label = "LLU e-pasts", MainLauncher = true)]
 public class LoginActivity : Activity {
-#region Declaration
-
-    private EditText _usernameField = null!;
-    private EditText _passwordField = null!;
-    private Button _loginButton = null!;
-    private LinearLayout _layout = null!;
-    private TextView _loginText = null!;
-
-#endregion
     private readonly AccountController _loginAttempt = new();
+
     protected override void OnCreate(Bundle? savedInstanceState) {
         base.OnCreate(savedInstanceState);
         var attempt = _loginAttempt.Login();
@@ -42,7 +34,6 @@ public class LoginActivity : Activity {
             _loginButton = FindViewById<Button>(Resource.Id.loginButton)!;
             _loginButton.Click += DoLogin;
         }
-        
     }
 
     private void StartEmailActivity() {
@@ -66,4 +57,14 @@ public class LoginActivity : Activity {
             }
         }
     }
+
+#region Declaration
+
+    private EditText _usernameField = null!;
+    private EditText _passwordField = null!;
+    private Button _loginButton = null!;
+    private LinearLayout _layout = null!;
+    private TextView _loginText = null!;
+
+#endregion
 }

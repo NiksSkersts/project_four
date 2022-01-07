@@ -7,7 +7,7 @@ using AndroidX.RecyclerView.Widget;
 namespace LLU.Android.Models;
 
 /// <summary>
-/// Defines how the email message object looks like, and what data does it show.
+///     Defines how the email message object looks like, and what data does it show.
 /// </summary>
 internal class EmailsViewHolder : RecyclerView.ViewHolder {
     public EmailsViewHolder(View itemView, Action<int> listener, Action<int> longclicklistener) : base(itemView) {

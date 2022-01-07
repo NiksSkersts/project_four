@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using LLU.Android.Models;
-using SQLite;
+﻿using SQLite;
 
 namespace LLU.Models;
 

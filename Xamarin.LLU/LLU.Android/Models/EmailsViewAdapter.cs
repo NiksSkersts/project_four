@@ -4,12 +4,11 @@ using Android.Graphics;
 using Android.Views;
 using AndroidX.RecyclerView.Widget;
 using LLU.Models;
-using MimeKit;
 
 namespace LLU.Android.Models;
 
 /// <summary>
-/// Listview adapter that deals with creation of new emails object (EmailsDataHolder) when one gets added, removed etc.
+///     Listview adapter that deals with creation of new emails object (EmailsDataHolder) when one gets added, removed etc.
 /// </summary>
 internal class EmailsViewAdapter : RecyclerView.Adapter {
     internal List<DatabaseData> _messages;
@@ -34,10 +33,9 @@ internal class EmailsViewAdapter : RecyclerView.Adapter {
             vh.Card.SetOutlineAmbientShadowColor(Color.PaleVioletRed);
             vh.Card.SetOutlineSpotShadowColor(Color.PaleVioletRed);
         }
+
         vh.Subject.Text = _messages[position].Subject;
-        if (_messages[position].NewFlag) {
-            vh.Subject.SetTypeface(vh.Subject.Typeface,TypefaceStyle.Bold);
-        }
+        if (_messages[position].NewFlag) vh.Subject.SetTypeface(vh.Subject.Typeface, TypefaceStyle.Bold);
         vh.From.Text = $"{_messages[position].From}";
         var time = DateTimeOffset.FromUnixTimeSeconds(_messages[position].Time);
         vh.Time.Text =

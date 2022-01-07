@@ -13,36 +13,52 @@ using MimeKit;
 using Console = System.Console;
 
 namespace LLU.Controllers;
+
 /// <summary>
-/// Provides the base for SMTP and IMAP controllers
+///     Provides the base for SMTP and IMAP controllers
 /// </summary>
-internal abstract class ControllerBase{
+internal abstract class ControllerBase {
     internal readonly CancellationTokenSource Cancel;
-    protected ImapClient? ImapClient;
-    protected SmtpClient? SmtpClient;
     protected readonly Secrets Secrets;
+    internal readonly UserData UserData;
+    protected ImapClient? ImapClient;
+
     /// <summary>
     ///     On new message event -> switch to true;
     /// </summary>
-    internal bool MessagesArrived = false;
-    protected ControllerBase(CancellationTokenSource cancel, Secrets secrets) {
+    internal bool MessagesArrived;
+
+    protected SmtpClient? SmtpClient;
+
+    protected ControllerBase(CancellationTokenSource cancel, Secrets secrets, UserData userData) {
         Cancel = cancel;
         Secrets = secrets;
+        UserData = userData;
     }
 }
 
 /// <summary>
-/// <para>
-///     LLU has some kind of security in place that blocks too many attempted Connect() requests - from this app and other
-///     third party apps like thunderbird.
-///     As far as I am aware, the suggestion is to disconnect or go IDLE on app exit or pause.
-/// </para>
+///     <para>
+///         LLU has some kind of security in place that blocks too many attempted Connect() requests - from this app and
+///         other
+///         third party apps like thunderbird.
+///         As far as I am aware, the suggestion is to disconnect or go IDLE on app exit or pause.
+///     </para>
 ///     <para>
 ///         Imap clients were created with long-lived connections in mind. As far as I am aware, while not in active use,
 ///         they enter IDLE mode and just sync from time to time to get push notifications.
 ///     </para>
 /// </summary>
-internal class ClientController : ControllerBase,IController {
+internal class ClientController : ControllerBase, IController {
+    /// <summary>
+    ///     Create an instance of ClientController by providing it with JSON file MailServer and MailPort parameters.
+    /// </summary>
+    /// <param name="secrets">Company secrets that are given to trusted people in an json file.</param>
+    /// <param name="userData">Userdata object.</param>
+    public ClientController(Secrets secrets, UserData userData) :
+        base(new CancellationTokenSource(), secrets, userData) =>
+        ImapClient = (ImapClient) Connect(secrets);
+
     /// <summary>
     ///     This is a one stop IMAP instance. It's meant to provide an automatic way of handling IMAPClient and connections
     ///     with server.
@@ -51,57 +67,79 @@ internal class ClientController : ControllerBase,IController {
     /// </summary>
     internal ImapClient Client {
         get {
-            if (ImapClient is not null) {
-                if (ImapClient.IsConnected) return ImapClient;
-                try {
-                    ImapClient = (ImapClient) Connect(Secrets);
-                }
-                catch (Exception e) {
-                    Console.WriteLine(e);
-                }
+            switch (ImapClient) {
+                case null:
+                    try {
+                        ImapClient = (ImapClient) Connect(Secrets);
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e);
+                    }
+
+                    break;
+                case {IsConnected: false, IsAuthenticated: false}:
+                    try {
+                        ImapClient = (ImapClient) Connect(Secrets);
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e);
+                    }
+
+                    break;
+                case {IsConnected: true, IsAuthenticated: false}:
+                    try {
+                        ImapClient = (ImapClient) ClientAuth(UserData, ImapClient);
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e);
+                    }
+
+                    break;
+                case {IsConnected: true, IsAuthenticated: true}:
+                    return ImapClient;
             }
-            else {
-                ImapClient = (ImapClient) Connect(Secrets);
-            }
+
+            if (ImapClient is null) // Shouldn't happen, but check nonetheless.
+                throw new Exception("IMAPClient is null!");
             return ImapClient;
         }
         set => ImapClient = value;
     }
 
-    /// <summary>
-    ///     Create an instance of ClientController by providing it with JSON file MailServer and MailPort parameters.
-    /// </summary>
-    /// <param name="secrets">Company secrets that are given to trusted people in an json file.</param>
-    public ClientController(Secrets secrets) : base(new CancellationTokenSource(),secrets) => 
-        ImapClient = (ImapClient) Connect(secrets);
-
     public object Connect(object data) {
         var temp = (Secrets) data;
-        var client = new ImapClient() {
+        var client = new ImapClient {
             ServerCertificateValidationCallback = (s, c, h, e) => true
         };
         if (!ConnectionController.IsConnectedToInternet) return client;
         try {
-            client.Connect(temp.MailServer, temp.MailPort,SecureSocketOptions.Auto, Cancel.Token);
+            client.Connect(temp.MailServer, temp.MailPort, SecureSocketOptions.Auto, Cancel.Token);
         }
         catch (Exception) {
-            //ignored
+            //todo implement workarounds for this, e.g offline mode.
+            throw new Exception("Failed to Connect to server!");
         }
 
         return client;
     }
+
     public object ClientAuth(UserData userData, object client) {
         var imapClient = (ImapClient) client;
-        if (imapClient.IsConnected) {
+        if (imapClient.IsConnected)
             try {
                 imapClient.Authenticate(userData.Username, userData.Password, Cancel.Token);
             }
             catch (Exception) {
                 return false;
             }
-        }
+
         return imapClient;
     }
+
+    public void Dispose() {
+        Client.Dispose();
+    }
+
     public bool DeleteMessages(ImapClient client, List<string> Ids) {
         try {
             foreach (var id in Ids)
@@ -113,27 +151,22 @@ internal class ClientController : ControllerBase,IController {
 
         return true;
     }
-    public void Dispose() {
-        Client.Dispose();
-    }
 }
 
 /// <summary>
-/// <para>Controller whose main job is to create a connection with a server, send a message using SMTP and dispose of itself.</para>
+///     <para>
+///         Controller whose main job is to create a connection with a server, send a message using SMTP and dispose of
+///         itself.
+///     </para>
 /// </summary>
-internal class SmtpController : ControllerBase,IController {
-    /// <summary>
-    /// Queries if the connection with the server is alright and won't cause any errors related to connection and authentication.
-    /// </summary>
-    internal bool IsOkay => SmtpClient is {IsConnected: true, IsAuthenticated: true};
-
+internal class SmtpController : ControllerBase, IController {
     /// <summary>
     ///     SMTPClient should be disconnected after sending the message. Please make sure all paths lead to disconnect and
     ///     disposal.
     /// </summary>
     /// <param name="secrets">Company secrets that are given to trusted people in an json file.</param>
     /// <param name="userData"></param>
-    public SmtpController(Secrets secrets, UserData userData): base(new CancellationTokenSource(),secrets) {
+    public SmtpController(Secrets secrets, UserData userData) : base(new CancellationTokenSource(), secrets, userData) {
         var smtp = new SmtpClient();
         try {
             smtp = (SmtpClient) Connect(secrets);
@@ -142,8 +175,16 @@ internal class SmtpController : ControllerBase,IController {
         catch (Exception e) {
             // ignored
         }
+
         SmtpClient = smtp;
     }
+
+    /// <summary>
+    ///     Queries if the connection with the server is alright and won't cause any errors related to connection and
+    ///     authentication.
+    /// </summary>
+    internal bool IsOkay => SmtpClient is {IsConnected: true, IsAuthenticated: true};
+
     public object Connect(object data) {
         SmtpClient client = new();
         client.ServerCertificateValidationCallback = (_, _, _, _) => true;
@@ -153,6 +194,7 @@ internal class SmtpController : ControllerBase,IController {
         catch (Exception) {
             Cancel.Cancel();
         }
+
         return client;
     }
 
@@ -168,6 +210,11 @@ internal class SmtpController : ControllerBase,IController {
         return smtp;
     }
 
+    public void Dispose() {
+        Cancel.Cancel();
+        SmtpClient?.Dispose();
+    }
+
     /// <summary>
     ///     Sends message via SMTP client.
     ///     <para>WARNING: Make sure you dispose of client after using it!</para>
@@ -176,8 +223,8 @@ internal class SmtpController : ControllerBase,IController {
     /// <param name="email"></param>
     /// <returns></returns>
     public bool SendMessage(MimeMessage email) {
-        bool status = false;
-        if (SmtpClient is not null) {
+        var status = false;
+        if (SmtpClient is not null)
             try {
                 SmtpClient.Send(email);
                 SmtpClient.Disconnect(true);
@@ -186,14 +233,11 @@ internal class SmtpController : ControllerBase,IController {
             catch (Exception) {
                 status = false;
             }
-        }
+
         return status;
     }
-    public void Dispose() {
-        Cancel.Cancel();
-        SmtpClient?.Dispose();
-    }
 }
+
 /// <summary>
 ///     Class is built upon already existing ImapClient. By going into IDLE state, client takes up the task of receiving
 ///     new messages or notifications.
@@ -202,22 +246,23 @@ internal class SmtpController : ControllerBase,IController {
 ///         client to be disposed of.
 ///     </para>
 ///     <para>It should be noted that an INBOX folder should be oppened before going into IDLE.</para>
-/// Not yet implemented!
+///     Not yet implemented!
 /// </summary>
 internal class IdleClientController : ClientController {
-    private CancellationTokenSource _done;
     private readonly ClientController _clientControlleŗ;
+    private CancellationTokenSource _done;
 
     /// <summary>
     /// </summary>
     /// <param name="client"></param>
     /// <param name="secrets"></param>
-    public IdleClientController(ClientController client, Secrets secrets) : base(secrets) {
+    public IdleClientController(ClientController client, Secrets secrets) : base(secrets, client.UserData) {
         _done = new CancellationTokenSource();
         _clientControlleŗ = client;
         Client = _clientControlleŗ.Client;
         if (Client is {IsConnected: true, IsAuthenticated: true}) {
-            Client.Inbox.OpenAsync(FolderAccess.ReadOnly).ContinueWith(second=>Client.IdleAsync(_done.Token, _clientControlleŗ.Cancel.Token));
+            Client.Inbox.OpenAsync(FolderAccess.ReadOnly)
+                .ContinueWith(second => Client.IdleAsync(_done.Token, _clientControlleŗ.Cancel.Token));
             IdleAsync();
         }
     }
@@ -230,9 +275,7 @@ internal class IdleClientController : ClientController {
             try {
                 await WaitForNewMessagesAsync();
 
-                if (_clientControlleŗ.MessagesArrived) {
-                    _clientControlleŗ.MessagesArrived = false;
-                }
+                if (_clientControlleŗ.MessagesArrived) _clientControlleŗ.MessagesArrived = false;
             }
             catch (OperationCanceledException) {
                 break;

@@ -8,120 +8,111 @@ using AndroidX.Core.App;
 using LLU.Android.Models;
 using LLU.Android.Views;
 using AndroidApp = Android.App.Application;
+using String = Java.Lang.String;
 
-[assembly: Dependency("NotificationController",LoadHint.Always)]
-namespace LLU.Android.Controllers
-{
-    /// <summary>
-    /// <a href="https://docs.microsoft.com/en-us/xamarin/xamarin-forms/app-fundamentals/local-notifications">More info at Microsoft docs.</a>
-    /// </summary>
-    public class NotificationController : INotificationController
-    {
-        const string channelId = "default";
-        const string channelName = "Default";
-        const string channelDescription = "The default channel for notifications.";
+[assembly: Dependency("NotificationController", LoadHint.Always)]
 
-        public const string TitleKey = "title";
-        public const string MessageKey = "message";
+namespace LLU.Android.Controllers; 
 
-        bool channelInitialized = false;
-        int messageId = 0;
-        int pendingIntentId = 0;
+/// <summary>
+///     <a href="https://docs.microsoft.com/en-us/xamarin/xamarin-forms/app-fundamentals/local-notifications">
+///         More info at
+///         Microsoft docs.
+///     </a>
+/// </summary>
+public class NotificationController : INotificationController {
+    private const string channelId = "default";
+    private const string channelName = "Default";
+    private const string channelDescription = "The default channel for notifications.";
 
-        NotificationManager manager;
+    public const string TitleKey = "title";
+    public const string MessageKey = "message";
 
-        public event EventHandler NotificationReceived;
+    private bool channelInitialized;
 
-        public static NotificationController Instance { get; private set; }
+    private NotificationManager manager;
+    private int messageId;
+    private int pendingIntentId;
 
-        public NotificationController() => Initialize();
+    public NotificationController() => Initialize();
 
-        public void Initialize()
-        {
-            if (Instance == null)
-            {
-                CreateNotificationChannel();
-                Instance = this;
-            }
+    public static NotificationController Instance { get; private set; }
+
+    public event EventHandler NotificationReceived;
+
+    public void Initialize() {
+        if (Instance == null) {
+            CreateNotificationChannel();
+            Instance = this;
         }
+    }
 
-        public void SendNotification(string title, string message, DateTime? notifyTime = null)
-        {
-            if (!channelInitialized)
-            {
-                CreateNotificationChannel();
-            }
+    public void SendNotification(string title, string message, DateTime? notifyTime = null) {
+        if (!channelInitialized) CreateNotificationChannel();
 
-            if (notifyTime != null)
-            {
-                Intent intent = new Intent(AndroidApp.Context, typeof(AlarmHandler));
-                intent.PutExtra(TitleKey, title);
-                intent.PutExtra(MessageKey, message);
-
-                PendingIntent pendingIntent = PendingIntent.GetBroadcast(AndroidApp.Context, pendingIntentId++, intent, PendingIntentFlags.CancelCurrent);
-                long triggerTime = GetNotifyTime(notifyTime.Value);
-                AlarmManager alarmManager = AndroidApp.Context.GetSystemService(Context.AlarmService) as AlarmManager;
-                alarmManager.Set(AlarmType.RtcWakeup, triggerTime, pendingIntent);
-            }
-            else
-            {
-                Show(title, message);
-            }
-        }
-
-        public void ReceiveNotification(string title, string message)
-        {
-            var args = new NotificationEventArgs()
-            {
-                Title = title,
-                Message = message,
-            };
-            NotificationReceived?.Invoke(null, args);
-        }
-
-        public void Show(string title, string message)
-        {
-            Intent intent = new Intent(AndroidApp.Context, typeof(EmailActivity));
+        if (notifyTime != null) {
+            var intent = new Intent(AndroidApp.Context, typeof(AlarmHandler));
             intent.PutExtra(TitleKey, title);
             intent.PutExtra(MessageKey, message);
 
-            PendingIntent pendingIntent = PendingIntent.GetActivity(AndroidApp.Context, pendingIntentId++, intent, PendingIntentFlags.UpdateCurrent);
+            var pendingIntent = PendingIntent.GetBroadcast(AndroidApp.Context, pendingIntentId++, intent,
+                PendingIntentFlags.CancelCurrent);
+            var triggerTime = GetNotifyTime(notifyTime.Value);
+            var alarmManager = AndroidApp.Context.GetSystemService(Context.AlarmService) as AlarmManager;
+            alarmManager.Set(AlarmType.RtcWakeup, triggerTime, pendingIntent);
+        }
+        else {
+            Show(title, message);
+        }
+    }
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(AndroidApp.Context, channelId)
-                .SetContentIntent(pendingIntent)
-                .SetContentTitle(title)
-                .SetContentText(message)
-                .SetLargeIcon(BitmapFactory.DecodeResource(AndroidApp.Context.Resources, Resource.Drawable.ic_calendar_black_24dp))
-                .SetSmallIcon(Resource.Drawable.ic_calendar_black_24dp)
-                .SetDefaults((int)NotificationDefaults.Sound | (int)NotificationDefaults.Vibrate);
+    public void ReceiveNotification(string title, string message) {
+        var args = new NotificationEventArgs {
+            Title = title,
+            Message = message
+        };
+        NotificationReceived?.Invoke(null, args);
+    }
 
-            Notification notification = builder.Build();
-            manager.Notify(messageId++, notification);
+    public void Show(string title, string message) {
+        var intent = new Intent(AndroidApp.Context, typeof(EmailActivity));
+        intent.PutExtra(TitleKey, title);
+        intent.PutExtra(MessageKey, message);
+
+        var pendingIntent = PendingIntent.GetActivity(AndroidApp.Context, pendingIntentId++, intent,
+            PendingIntentFlags.UpdateCurrent);
+
+        var builder = new NotificationCompat.Builder(AndroidApp.Context, channelId)
+            .SetContentIntent(pendingIntent)
+            .SetContentTitle(title)
+            .SetContentText(message)
+            .SetLargeIcon(BitmapFactory.DecodeResource(AndroidApp.Context.Resources,
+                Resource.Drawable.ic_calendar_black_24dp))
+            .SetSmallIcon(Resource.Drawable.ic_calendar_black_24dp)
+            .SetDefaults((int) NotificationDefaults.Sound | (int) NotificationDefaults.Vibrate);
+
+        var notification = builder.Build();
+        manager.Notify(messageId++, notification);
+    }
+
+    private void CreateNotificationChannel() {
+        manager = (NotificationManager) AndroidApp.Context.GetSystemService(Context.NotificationService);
+
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.O) {
+            var channelNameJava = new String(channelName);
+            var channel = new NotificationChannel(channelId, channelNameJava, NotificationImportance.Default) {
+                Description = channelDescription
+            };
+            manager.CreateNotificationChannel(channel);
         }
 
-        void CreateNotificationChannel()
-        {
-            manager = (NotificationManager)AndroidApp.Context.GetSystemService(AndroidApp.NotificationService);
+        channelInitialized = true;
+    }
 
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
-            {
-                var channelNameJava = new Java.Lang.String(channelName);
-                var channel = new NotificationChannel(channelId, channelNameJava, NotificationImportance.Default)
-                {
-                    Description = channelDescription
-                };
-                manager.CreateNotificationChannel(channel);
-            }
-
-            channelInitialized = true;
-        }
-
-        long GetNotifyTime(DateTime notifyTime)
-        {
-            DateTime utcTime = TimeZoneInfo.ConvertTimeToUtc(notifyTime);
-            double epochDiff = (new DateTime(1970, 1, 1) - DateTime.MinValue).TotalSeconds;
-            long utcAlarmTime = utcTime.AddSeconds(-epochDiff).Ticks / 10000;
-            return utcAlarmTime; // milliseconds
-        }
+    private long GetNotifyTime(DateTime notifyTime) {
+        var utcTime = TimeZoneInfo.ConvertTimeToUtc(notifyTime);
+        var epochDiff = (new DateTime(1970, 1, 1) - DateTime.MinValue).TotalSeconds;
+        var utcAlarmTime = utcTime.AddSeconds(-epochDiff).Ticks / 10000;
+        return utcAlarmTime; // milliseconds
     }
 }

@@ -7,10 +7,12 @@ using MimeKit;
 using MimeKit.Text;
 
 namespace LLU.Android.Controllers;
+
 internal static partial class DataController {
     /// <summary>
-    /// Emails received from the server are received in MimeMessage format. To be able to put them in database, they get converted to a custom class
-    /// "DatabaseData".
+    ///     Emails received from the server are received in MimeMessage format. To be able to put them in database, they get
+    ///     converted to a custom class
+    ///     "DatabaseData".
     /// </summary>
     /// <param name="item">E-mail from the server.</param>
     /// <param name="id">Each e-mail has an unique ID for each folder.</param>
@@ -18,27 +20,36 @@ internal static partial class DataController {
     /// <param name="hasRead">Has the e-mail been read?</param>
     /// <param name="hasBeenDeleted">Has the e-mail been deleted?</param>
     /// <returns></returns>
-    public static partial DatabaseData ConvertFromMime(MimeMessage item, UniqueId id, string folder, bool hasRead, bool hasBeenDeleted);
+    public static partial DatabaseData ConvertFromMime(MimeMessage item, UniqueId id, string folder, bool hasRead,
+        bool hasBeenDeleted);
+
     /// <summary>
-    /// Creates an e-mail by creating a new MimeMessage.
+    ///     Creates an e-mail by creating a new MimeMessage.
     /// </summary>
     /// <param name="receiversString"> All the emails which are supposed to receive the email.</param>
     /// <param name="sender">The one who sends it.</param>
     /// <param name="subject">Subject of the email.</param>
     /// <param name="body">Text, HTMl formatted body.</param>
     /// <returns>MimeMessage or null, if the creation failed.</returns>
-    public static partial MimeMessage? CreateEmail(string receiversString, string sender, string? subject, string? body);
+    public static partial MimeMessage?
+        CreateEmail(string receiversString, string sender, string? subject, string? body);
+
     public static partial string GetFilePath(string filename);
     private static partial string GetLocalAppData();
+
     /// <summary>
-    /// Saves all the attachments that are handed alongside the MimeMessage.
+    ///     Saves all the attachments that are handed alongside the MimeMessage.
     /// </summary>
     /// <returns>List of locations where the files have been stored at.</returns>
     public static partial string[] SaveAttachments(MimeMessage message);
 }
-internal static partial class DataController{
-    private static partial string GetLocalAppData() => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+internal static partial class DataController {
+    private static partial string GetLocalAppData() =>
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
     public static partial string GetFilePath(string filename) => Path.Combine(GetLocalAppData(), filename);
+
     public static partial DatabaseData ConvertFromMime(MimeMessage item, UniqueId id, string folder, bool hasRead,
         bool hasBeenDeleted) {
         DatabaseData dataTemp = new() {
@@ -67,7 +78,9 @@ internal static partial class DataController{
         dataTemp.Id = item.MessageId ?? dataTemp.UniqueId;
         return dataTemp;
     }
-    public static partial MimeMessage? CreateEmail(string receiversString, string sender, string? subject, string? body) {
+
+    public static partial MimeMessage?
+        CreateEmail(string receiversString, string sender, string? subject, string? body) {
         subject ??= string.Empty;
         body ??= string.Empty;
 
@@ -90,6 +103,7 @@ internal static partial class DataController{
 
         return email;
     }
+
     public static partial string[] SaveAttachments(MimeMessage message) {
         var attachmentcount = message.Attachments.Count();
         if (attachmentcount == 0)

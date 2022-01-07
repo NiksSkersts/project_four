@@ -1,7 +1,7 @@
 ﻿namespace LLU.Models;
 
 /// <summary>
-/// Defines secrets that are not bundled with the rest of the code.
+///     Defines secrets that are not bundled with the rest of the code.
 /// </summary>
 public class Secrets {
     public string MailServer { get; set; }
