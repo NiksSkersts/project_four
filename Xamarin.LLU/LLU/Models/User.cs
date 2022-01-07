@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Android.App;
 using LLU.Android.Controllers;
@@ -315,7 +316,7 @@ internal class EmailUser : User {
             }
 
             Inbox?.Close();
-            return _messages;
+            return _messages.OrderByDescending(q=>q.Time);
         }
         set => throw new NotImplementedException("Messages being set!");
     }
