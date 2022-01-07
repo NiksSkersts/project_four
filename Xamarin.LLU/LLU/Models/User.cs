@@ -282,7 +282,8 @@ internal class EmailUser : User {
 
                         _messages.Add(DataController.ConvertFromMime(message, item.UniqueId, item.Folder.Name, newFlag,
                             hasBeenDeleted));
-
+                        
+                        RuntimeController.Instance.UpdateDatabase(_messages);
                         if (App.Container is not null && newFlag) {
                             App.Container.Resolve<INotificationController>()
                                 .SendNotification("New E-mail", message.Subject);
@@ -290,23 +291,26 @@ internal class EmailUser : User {
                     }
 
                     _idsInMessages = ids;
-                    for (int i = 0; i < _messages.Count; i++) {
+                    var oldMessages = _messages;
+                    var deletedMessages = new List<DatabaseData>();
+                    var newMessages = new ObservableCollection<DatabaseData>();
+                    foreach (var message in oldMessages) {
                         bool exists = false;
                         foreach (var id in ids) {
-                            if (_messages[i].Id.Equals(id) || _messages[i].UniqueId.Equals(id)) {
+                            if (message.Id.Equals(id) || message.UniqueId.Equals(id)) {
                                 exists = true;
+                                newMessages.Add(message);
                             }
                         }
-
                         if (exists is false) {
-                            var message = _messages[i];
-                            var isThereAnyChanges = _messages.Remove(_messages[i]);
-                            if (isThereAnyChanges) {
-                                RuntimeController.Instance.RemoveMessage(message);
-                                _clientController.MessagesArrived = false;
-                            }
+                            deletedMessages.Add(message);
                         }
                     }
+                    foreach (var message in deletedMessages) {
+                        RuntimeController.Instance.RemoveMessage(message);
+                    }
+                    _clientController.MessagesArrived = false;
+                    _messages = newMessages;
                 }
             }
 
