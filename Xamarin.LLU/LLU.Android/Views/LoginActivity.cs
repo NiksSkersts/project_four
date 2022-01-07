@@ -3,8 +3,6 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using Android.Widget;
-using JoanZapata.XamarinIconify;
-using JoanZapata.XamarinIconify.Fonts;
 using LLU.Android.Controllers;
 using LLU.Models;
 

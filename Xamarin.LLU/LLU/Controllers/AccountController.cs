@@ -39,7 +39,8 @@ internal class AccountController : IController {
     }
 
     public static bool LogOut(Context context) {
-        var result = DatabaseController.DbController.WipeDatabase();
+        RuntimeController.Instance.WipeDatabase();
+        RuntimeController.Instance.Dispose();
         User.UserData = null;
         var backToStart = new Intent(context, typeof(LoginActivity));
         context.StartActivity(backToStart);

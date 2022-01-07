@@ -20,14 +20,6 @@ namespace LLU.Android.LLU.Models;
 /// <para>Provides common functions or parameters that should be shared amongst all classes that inherit from this class.</para>
 /// </summary>
 internal abstract class User : IDisposable {
-    
-    /// <summary>
-    ///     Getter for database connection.
-    ///     Backend uses SQLITE database that is integrated within the application.
-    ///     <para>Disconnect after use!</para>
-    /// </summary>
-    protected static DatabaseController Database =>
-        DatabaseController.DbController;
     /// <summary>
     /// Gets secrets from a json file.
     /// </summary>
@@ -62,7 +54,7 @@ internal abstract class User : IDisposable {
             if ((!string.IsNullOrEmpty(user.Username)
                  || !string.IsNullOrEmpty(user.Password)))
                 return user;
-            Database.WipeDatabase();
+            RuntimeController.Instance.WipeDatabase();
             return null;
         }
         set {
@@ -93,11 +85,12 @@ internal abstract class User : IDisposable {
 
     public void Dispose() { }
 }
+
 /// <summary>
 /// Defines the main class that stores and deals with email data.
 /// <para>It's responsible for an easy access to inbox, messages and creation of SMTP and IMAP clients.</para>
 /// </summary>
-internal class EmailUser : User {
+internal  class EmailUser : User {
     private readonly ClientController? _clientController;
     private ObservableCollection<DatabaseData> _messages;
     private IMailFolder? _inbox;
@@ -212,6 +205,7 @@ internal class EmailUser : User {
                 if (Inbox.Count != _messages.Count) {
                     var isThereAnyChanges = false;
                     List<string> ids = new List<string>();
+                    
                     foreach (var item in fetched) {
                         if (_idsInMessages.Exists(q =>
                                 q.Equals(item.Envelope.MessageId) || q.Equals(item.UniqueId.ToString()))) {
@@ -255,14 +249,14 @@ internal class EmailUser : User {
                             }
                         }
                         if (exists is false) {
+                            var message = _messages[i];
                             isThereAnyChanges =_messages.Remove(_messages[i]);
+                            if (isThereAnyChanges) {
+                                RuntimeController.Instance.RemoveMessage(message);
+                                _clientController.MessagesArrived = false;
+                            }
                         }
                     }
-                    if (isThereAnyChanges) {
-                        Database.UpdateDatabase(_messages);
-                        _clientController.MessagesArrived = false;
-                    }
-                    
                 }
                 Inbox?.Close();
             }
@@ -381,7 +375,7 @@ internal class EmailUser : User {
     /// </summary>
     public new void Dispose() {
         _clientController?.Dispose();
-        Database.Dispose();
+        RuntimeController.Instance.Dispose();
     }
 
 

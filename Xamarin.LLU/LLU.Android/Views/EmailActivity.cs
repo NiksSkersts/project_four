@@ -179,7 +179,7 @@ public class EmailActivity : Activity {
         }
         _messages[position].NewFlag = false;
         User.EmailUserData?.SetMessageFlags(_messages[position].UniqueId,MessageFlags.Seen);
-        DatabaseController.DbController.UpdateDatabase(new ObservableCollection<DatabaseData>{_messages[position]});
+        RuntimeController.Instance.UpdateDatabase(_messages[position]);
         _adapter.NotifyItemChanged(position);
         StartActivity(intent);
     }

@@ -11,6 +11,11 @@ internal class MailStorageSystem : MailStorageSystemBase, IMailStorageSystem {
     public void AddMail(List<DatabaseData> mail) {
         foreach (var item in mail) base.AddMail(item);
     }
+
+    public bool RemoveMail(string id) {
+        var result = ReturnMail(id);
+        return result is not null && RemoveMail(result);
+    }
 }
 public interface IMailStorageSystem {
     /// <summary>
@@ -30,6 +35,12 @@ public interface IMailStorageSystem {
     /// </summary>
     /// <param name="mail"></param>
     public bool RemoveMail(DatabaseData mail);
+    /// <summary>
+    /// Clears the database.
+    /// </summary>
+    /// <param name="all"></param>
+    /// <returns></returns>
+    public bool RemoveMail(bool all);
 
     public List<DatabaseData>? ReturnMail(int year, int month, int day);
     /// <summary>
@@ -59,9 +70,6 @@ public interface IMailStorageSystem {
 /// </summary>
 internal abstract class MailStorageSystemBase {
     private static List<Year> _years = new();
-    /// <summary>
-    ///     Constructor that creates an empty class.
-    /// </summary>
     public void AddMail(DatabaseData mail) {
         var utctime = DateTimeOffset.FromUnixTimeSeconds(mail.Time);
         var searchYear = _years.Find(year => year.Value.Equals(utctime.Year));
@@ -76,13 +84,21 @@ internal abstract class MailStorageSystemBase {
         return searchYear is not null && searchYear.RemoveMail(mail);
     }
 
+    public bool RemoveMail(bool all) {
+        if (all) {
+            _years.Clear();
+        }
+
+        return _years.Any();
+    }
+
     public List<DatabaseData>? ReturnMail(int year, int month, int day) {
         var findYear = SearchYear(year);
         if (findYear is null) return null;
         var findMonth = SearchMonth(month, findYear);
         if (findMonth is null) return null;
         var findDay = SearchDay(day, findMonth);
-        return findDay?.ReturnMail().Values.ToList();
+        return findDay?.ReturnMail();
     }
     public List<DatabaseData>? ReturnMail(int year, int month) {
         var findYear = SearchYear(year);
@@ -91,6 +107,16 @@ internal abstract class MailStorageSystemBase {
         return findMonth?.ReturnMail();
     }
     public List<DatabaseData>? ReturnMail(int year) => SearchYear(year)?.ReturnMail();
+
+    public DatabaseData? ReturnMail(string id) {
+        DatabaseData? data = null;
+        foreach (var mail in ReturnMail()) {
+            if (mail.Id.Equals(id) || mail.UniqueId.Equals(id)) {
+                data = mail;
+            }
+        }
+        return data;
+    }
     public List<DatabaseData> ReturnMail() {
         var data = new List<DatabaseData>();
         foreach (var year in _years) data.AddRange(year.ReturnMail());
@@ -121,12 +147,24 @@ internal abstract class MailStorageSystemBase {
         return data;
     }
 
+    private interface IItem {
+        /// <summary>
+        /// Defines the value of the Item object. E.g. year, month, day.
+        /// </summary>
+        public int Value { get; }
+        /// <summary>
+        /// Returns the list of mail objects in the object
+        /// </summary>
+        /// <returns></returns>
+        public List<DatabaseData> ReturnMail();
+    }
+
     /// <summary>
     ///     Year object that stores integer value representing a year, and a list of months.
     /// </summary>
-    internal class Year {
+    internal class Year: IItem {
         public readonly Month[] Months = new Month[12];
-        public readonly int Value;
+        public int Value { get; }
         public Year(int value) => Value = value;
 
         public List<DatabaseData> ReturnMail() {
@@ -151,15 +189,15 @@ internal abstract class MailStorageSystemBase {
             var searchMonth = Months[DateTimeOffset.FromUnixTimeSeconds(mail.Time).Month-1];
             return searchMonth is not null && searchMonth.RemoveMail(mail);
         }
-
+        
         public DatabaseData? FindMail(DatabaseData mail) => 
             Months[DateTimeOffset.FromUnixTimeSeconds(mail.Time).Month-1].FindMail(mail);
     }
 
-    internal class Month {
+    internal class Month : IItem {
         public readonly Day[] Days;
         private readonly Year Year;
-        public int Value;
+        public int Value { get; }
 
         public Month(Year year, int month) {
             Value = month;
@@ -171,7 +209,7 @@ internal abstract class MailStorageSystemBase {
             var data = new List<DatabaseData>();
             for (var j = 0; j < Days.Length; j++) {
                 if (Days[j] is null) continue;
-                data.AddRange(Days[j].ReturnMail().Values);
+                data.AddRange(Days[j].ReturnMail());
             }
             return data;
         }
@@ -195,9 +233,9 @@ internal abstract class MailStorageSystemBase {
             Days[DateTimeOffset.FromUnixTimeSeconds(mail.Time).Day-1].FindMail(mail);
     }
 
-    internal class Day {
+    internal class Day : IItem{
         private Month Month;
-        public int Value;
+        public int Value { get; }
         public SortedList<long,DatabaseData> Mail;
         public int MailCount;
         
@@ -208,18 +246,11 @@ internal abstract class MailStorageSystemBase {
             MailCount = mail.Count;
         }
 
-        public SortedList<long,DatabaseData> ReturnMail() => Mail;
+        public List<DatabaseData> ReturnMail() => Mail.Values.ToList();
 
         public void AddMail(DatabaseData mail) {
-            var containsValue = false;
-            foreach (var item in Mail) {
-                if (item.Value.Id.Equals(mail.Id)) {
-                    containsValue = true;
-                }
-            }
-            if (containsValue)
-                return;
             var containsKey = false;
+            var containsValue = false;
             foreach (var item in Mail) {
                 if (item.Key.Equals(mail.Time)) {
                     containsKey = true;
@@ -227,9 +258,31 @@ internal abstract class MailStorageSystemBase {
             }
 
             if (containsKey) {
-                mail.Time += 1;
+                DatabaseData? value = null;
+                foreach (var item in Mail) {
+                    if (item.Value.Id.Equals(mail.Id)) {
+                        value = item.Value;
+                        containsValue = true;
+                    }
+                }
+
+                if (value != null) {
+                    var sameEntry = value.DeleteFlag.Equals(mail.DeleteFlag) && value.NewFlag.Equals(mail.NewFlag);
+                    if (sameEntry)
+                        return;
+                    Mail[value.Time] = mail;
+                    
+                }
             }
-            Mail.Add(mail.Time,mail);
+            
+            if ((containsKey is false && containsValue is false) || (containsKey && !containsValue)) {
+                if (containsKey && !containsValue) {
+                    // Safeguard for the nearly impossible moment when two emails have been sent at the exact precise moment.
+                    mail.Time++;
+                }
+                Mail.Add(mail.Time,mail);
+            }
+
         }
 
         public bool RemoveMail(DatabaseData mail) {
