@@ -12,7 +12,9 @@ namespace LLU.Android.Models;
 /// </summary>
 internal class EmailsViewAdapter : RecyclerView.Adapter {
     internal List<DatabaseData> _messages;
-
+    private List<int> Selection = new();
+    int selectedPosition = -1;
+    
     public EmailsViewAdapter(List<DatabaseData> messages) => _messages = messages;
 
     public override int ItemCount => _messages.Count;
@@ -24,11 +26,20 @@ internal class EmailsViewAdapter : RecyclerView.Adapter {
     }
 
     private void OnLongClick(int position) {
+        selectedPosition = position;
+        NotifyDataSetChanged();
         ItemLongClick?.Invoke(this, position);
     }
 
     public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         var vh = holder as EmailsViewHolder ?? throw new InvalidOperationException();
+        if (selectedPosition == position) {
+            holder.ItemView.SetBackgroundColor(Color.Pink);
+        }
+        else {
+            holder.ItemView.SetBackgroundColor(Color.Transparent);
+        }
+        
         if (_messages[position].PriorityFlag) {
             vh.Card.SetOutlineAmbientShadowColor(Color.PaleVioletRed);
             vh.Card.SetOutlineSpotShadowColor(Color.PaleVioletRed);

@@ -146,7 +146,6 @@ public class EmailActivity : Activity {
     /// </summary>
     /// <exception cref="NotImplementedException">NOT YET IMPLEMENTED.</exception>
     private void OnItemLongClick(object sender, int e) {
-        throw new NotImplementedException();
     }
 
     /// <summary>
