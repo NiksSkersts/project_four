@@ -98,7 +98,6 @@ internal abstract class User : IDisposable {
 /// </summary>
 internal class EmailUser : User {
     private readonly ClientController? _clientController;
-    private List<string> _idsInMessages = new();
     private IMailFolder? _inbox;
     private ObservableCollection<DatabaseData> _messages;
 
@@ -195,7 +194,6 @@ internal class EmailUser : User {
                                                 foreach (var message in _messages) {
                                                     if (!message.UniqueId.Equals(uid.ToString())) continue;
                                                     var res = _messages.Remove(message);
-                                                    var res1 = _idsInMessages.Remove(message.Id);
                                                 }
                                             }
                                         };
@@ -250,20 +248,38 @@ internal class EmailUser : User {
     public IEnumerable<DatabaseData> Messages {
         get {
             if (_clientController is null) return _messages;
-            if (Inbox.Count != _messages.Count) {
-                var ids = new List<string>();
+            if (IsthereAnyChanges()) {
+                
                 var fetched = FetchMessagesFromServer(0, -1);
+                var fetchedRw = fetched!.ToList();
+                var oldMessages = _messages;
+                var newCollection = new ObservableCollection<DatabaseData>();
+                var deletedMessages = new List<DatabaseData>();
+
                 if (fetched is not null) {
-                    foreach (var item in fetched) {
-                        if (_idsInMessages.Exists(q =>
-                                q.Equals(item.Envelope.MessageId) || q.Equals(item.UniqueId.ToString()))) {
-                            ids.Add(item.Envelope.MessageId);
-                            continue;
+                    
+                    foreach (var oldMessage in oldMessages) {
+                        var exists = false;
+                        foreach (var fetchedMessage in fetched) {
+                            if (oldMessage.Id.Equals(fetchedMessage.Envelope.MessageId) || oldMessage.Id.Equals(fetchedMessage.UniqueId.ToString())) {
+                                newCollection.Add(oldMessage);
+                                fetchedRw.Remove(fetchedMessage);
+                                exists = true;
+                            }
+
+                            if (exists is false) {
+                                deletedMessages.Add(oldMessage);
+                            }
                         }
                         
+                    }
+
+                    foreach (var item in fetchedRw) {
+
                         var message = Inbox.GetMessage(item.UniqueId);
                         var newFlag = true;
                         var hasBeenDeleted = false;
+                        
                         if (item.Flags is not (null or MessageFlags.None)) {
                             switch (item.Flags.Value) {
                                 case MessageFlags.Seen:
@@ -274,57 +290,41 @@ internal class EmailUser : User {
                                     break;
                             }
                         }
+                        
 
-                        if (string.IsNullOrEmpty(item.Envelope.MessageId)) {
-                            ids.Add(item.UniqueId.ToString());
-                        }
-
-                        ids.Add(item.Envelope.MessageId);
-
-                        _messages.Add(DataController.ConvertFromMime(message, item.UniqueId, item.Folder.Name, newFlag,
+                        newCollection.Add(DataController.ConvertFromMime(message, item.UniqueId, item.Folder.Name, newFlag,
                             hasBeenDeleted));
                         
-                        RuntimeController.Instance.UpdateDatabase(_messages);
+                        RuntimeController.Instance.UpdateDatabase(newCollection);
+                        
                         if (App.Container is not null && newFlag) {
                             App.Container.Resolve<INotificationController>()
                                 .SendNotification("New E-mail", message.Subject);
                         }
+                        
                     }
-
-                    _idsInMessages = ids;
-                    var oldMessages = _messages;
-                    var deletedMessages = new List<DatabaseData>();
-                    var newMessages = new ObservableCollection<DatabaseData>();
-                    foreach (var message in oldMessages) {
-                        bool exists = false;
-                        foreach (var id in ids) {
-                            if (message.Id.Equals(id) || message.UniqueId.Equals(id)) {
-                                exists = true;
-                                newMessages.Add(message);
-                            }
-                        }
-                        if (exists is false) {
-                            deletedMessages.Add(message);
-                        }
-                    }
+                    
                     foreach (var message in deletedMessages) {
                         RuntimeController.Instance.RemoveMessage(message);
                     }
                     _clientController.MessagesArrived = false;
-                    _messages = newMessages;
+                    _messages = newCollection;
                 }
             }
 
             Inbox?.Close();
             return _messages.OrderByDescending(q=>q.Time);
+
+
+
+            bool IsthereAnyChanges() => Inbox.Count != _messages.Count;
+            IList<IMessageSummary>? FetchMessagesFromServer(int startIndex, int endIndex) {
+                var fetched = Inbox.Fetch(startIndex, endIndex,
+                    MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope | MessageSummaryItems.Flags);
+                return fetched;
+            }
         }
         set => throw new NotImplementedException("Messages being set!");
-    }
-
-    private IList<IMessageSummary>? FetchMessagesFromServer(int startIndex, int endIndex) {
-        var fetched = Inbox.Fetch(startIndex, endIndex,
-            MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope | MessageSummaryItems.Flags);
-        return fetched;
     }
 
     /// <summary>
