@@ -106,9 +106,7 @@ internal class EmailUser : User {
     ///         This is required for IdleClientController to inherit this class.
     ///     </para>
     /// </summary>
-    private EmailUser() {
-        _messages = new ObservableCollection<DatabaseData>();
-    }
+    private EmailUser() => _messages = new ObservableCollection<DatabaseData>();
 
     /// <summary>
     ///     Constructor creates a new EmailUser on app launch. Assumption remains that this constructor is used at first-launch
@@ -270,7 +268,6 @@ internal class EmailUser : User {
                                 deletedMessages.Add(oldMessage);
                             }
                         }
-                        
                     }
 
                     foreach (var item in fetchedRw) {

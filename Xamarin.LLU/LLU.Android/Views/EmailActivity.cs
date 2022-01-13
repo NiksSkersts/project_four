@@ -56,13 +56,11 @@ public class EmailActivity : Activity {
         _eaRefresher = FindViewById<SwipeRefreshLayout>(Resource.Id.EA_Refresher)!;
 
         _hamburgerMenu.Background =
-            new IconDrawable(this, FontAwesomeIcons.fa_navicon.ToString())
-                .WithColor(Color.Red)
-                .WithSizePx(50);
+            new IconDrawable(this, FontAwesomeIcons.fa_close.ToString())
+                .WithColor(Color.Red);
         _writeButton.Background =
             new IconDrawable(this, FontAwesomeIcons.fa_pencil.ToString())
-                .WithColor(Color.Red)
-                .WithSizePx(50);
+                .WithColor(Color.Red);
         _hamburgerMenu.Click += MenuClick;
         _writeButton.Click += WriteButton_Click;
         _exitButton.Click += ExitButton_Click;
@@ -75,7 +73,7 @@ public class EmailActivity : Activity {
         base.OnPostCreate(savedInstanceState);
         Button showPopupMenu = FindViewById<Button>(Resource.Id.AppBarMenu);
         showPopupMenu.Gravity = GravityFlags.Right;
-        showPopupMenu.Background = new IconDrawable(this,FontAwesomeIcons.fa_bars.ToString());
+        showPopupMenu.Background = new IconDrawable(this,FontAwesomeIcons.fa_bars.ToString()).WithColor(Color.Red);
         showPopupMenu.Click += (s, arg) => {
             PopupMenu menu = new PopupMenu(this, showPopupMenu);
             menu.Inflate(Resource.Menu.EmailActivityMenu);
@@ -83,12 +81,13 @@ public class EmailActivity : Activity {
                 var item = args.Item;
                 if (item is null) return;
                 if (item.ItemId == Resource.Id.delete) {
-                    var list = new List<UniqueId>();
-                    var position = _adapter.selectedPosition;
-                    list.Add(UniqueId.Parse(_messages[position].UniqueId));
-                    EmailUser.EmailUserData.DeleteMessage(list);
+                    foreach (var position in _adapter.selectedPosition) {
+                        var list = new List<UniqueId>();
+                        list.Add(UniqueId.Parse(_messages[position].UniqueId));
+                        EmailUser.EmailUserData.DeleteMessage(list);
+                    }
                     HandleRefresh(this,EventArgs.Empty);
-                    _adapter.selectedPosition = -1;
+                    _adapter.selectedPosition.Clear();
                 }
             };
             menu.Show();
@@ -110,6 +109,19 @@ public class EmailActivity : Activity {
         _recyclerView.SetLayoutManager(_mLayoutManager);
         layout.AddView(_recyclerView);
         HandleRefresh(this, EventArgs.Empty);
+    }
+    /// <summary>
+    /// <a href="https://www.tutorialspoint.com/xamarin/xamarin_menus.htm">First source</a>
+    /// <a href="https://developer.android.com/guide/topics/resources/menu-resource.html">Second source</a>
+    /// </summary>
+    private void OnItemLongClick(object sender, int e) {
+        if (_adapter.selectedPosition.Contains(e)) {
+            _adapter.selectedPosition.Remove(e);
+        }
+        else {
+            _adapter.selectedPosition.Add(e);
+        }
+        _adapter.NotifyItemChanged(e);
     }
 
 
@@ -155,39 +167,6 @@ public class EmailActivity : Activity {
     protected override void OnDestroy() {
         base.OnDestroy();
         //User.EmailUserData?.Dispose();
-    }
-
-    /// <summary>
-    ///     <para>
-    ///         On item long click select a message.
-    ///         Show a small menu that allows to delete or move a message
-    ///     </para>
-    /// </summary>
-    /// <exception cref="NotImplementedException">NOT YET IMPLEMENTED.</exception>
-    private void OnItemLongClick(object sender, int e) {
-        _adapter.selectedPosition = e;
-        _adapter.NotifyItemChanged(e);
-        
-    }
-
-    public override bool OnCreateOptionsMenu(IMenu menu) {
-        MenuInflater.Inflate(Resource.Menu.EmailActivityMenu,menu);
-        return base.OnCreateOptionsMenu(menu); 
-    }
-
-    public override bool OnOptionsItemSelected(IMenuItem item) {
-        if (item.ItemId == Resource.Id.delete) {
-            var list = new List<UniqueId>();
-            var position = _adapter.selectedPosition;
-            list.Add(UniqueId.Parse(_messages[position].UniqueId));
-            EmailUser.EmailUserData.DeleteMessage(list);
-            _messages.RemoveAt(position);
-            _adapter.NotifyItemRemoved(position);
-            _adapter.selectedPosition = -1;
-            return base.OnOptionsItemSelected(item);
-        }
-
-        return true;
     }
 
     /// <summary>

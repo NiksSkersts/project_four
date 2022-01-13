@@ -53,6 +53,52 @@ public interface IDatabase {
     public bool WipeDatabase();
 }
 
+/// <summary>
+///     Controller that creates and manages a connection with SQLITE database. Also used to keep runtime database in sync
+///     with SQLITE.
+/// </summary>
+public class DatabaseController : IController {
+    protected readonly SQLiteAsyncConnection Database;
+
+    /// <summary>
+    ///     Creates a new DatabaseController Class. This is the place where to specify SQLITE location and create it's tables.
+    ///     Creates the runtime database.
+    /// </summary>
+    protected DatabaseController() {
+        Database = (SQLiteAsyncConnection) Connect(DataController.GetFilePath("data"));
+        _ = Database.DropTableAsync<DatabaseData>().Result;
+        _ = Database.CreateTableAsync<DatabaseData>().Result;
+    }
+
+    protected List<DatabaseData> GetDataFromDatabase() {
+        var tableData = Database.Table<DatabaseData>().ToListAsync().Result;
+        return tableData.Where(q => q.DeleteFlag == false).ToList();
+    }
+
+    public object Connect(object data)
+        => new SQLiteAsyncConnection((string) data);
+
+    public object ClientAuth(UserData temp, object? db) => Database.InsertAsync(temp, typeof(UserData)).Result;
+
+    public void Dispose() {
+        Database.CloseAsync();
+    }
+
+    protected void RemoveMessageFromDatabase(DatabaseData message) =>
+        Database.Table<DatabaseData>().DeleteAsync(q => q.Id.Equals(message.Id));
+
+    protected void InsertReplaceMessage(DatabaseData message) => Database.InsertOrReplaceAsync(message);
+
+    protected bool WipeDatabase() => Database.DeleteAllAsync<DatabaseData>().Result is not 0;
+
+    protected Task<int> DeleteMessage(string id) {
+        var row = Database.Table<DatabaseData>().Where(q => q.Id.Equals(id)).FirstOrDefaultAsync().Result;
+        if (row is not null) {
+            row.DeleteFlag = true;
+        }
+        return Database.InsertOrReplaceAsync(row);
+    }
+}
 public class RuntimeController : DatabaseController, IDatabase, IDisposable {
     private RuntimeController() {
         RuntimeDatabase.AddMail(GetDataFromDatabase());
@@ -114,49 +160,3 @@ public class RuntimeController : DatabaseController, IDatabase, IDisposable {
     }
 }
 
-/// <summary>
-///     Controller that creates and manages a connection with SQLITE database. Also used to keep runtime database in sync
-///     with SQLITE.
-/// </summary>
-public class DatabaseController : IController {
-    protected readonly SQLiteAsyncConnection Database;
-
-    /// <summary>
-    ///     Creates a new DatabaseController Class. This is the place where to specify SQLITE location and create it's tables.
-    ///     Creates the runtime database.
-    /// </summary>
-    protected DatabaseController() {
-        Database = (SQLiteAsyncConnection) Connect(DataController.GetFilePath("data"));
-        _ = Database.DropTableAsync<DatabaseData>().Result;
-        _ = Database.CreateTableAsync<DatabaseData>().Result;
-    }
-
-    protected List<DatabaseData> GetDataFromDatabase() {
-        var tableData = Database.Table<DatabaseData>().ToListAsync().Result;
-        return tableData.Where(q => q.DeleteFlag == false).ToList();
-    }
-
-    public object Connect(object data)
-        => new SQLiteAsyncConnection((string) data);
-
-    public object ClientAuth(UserData temp, object? db) => Database.InsertAsync(temp, typeof(UserData)).Result;
-
-    public void Dispose() {
-        Database.CloseAsync();
-    }
-
-    protected void RemoveMessageFromDatabase(DatabaseData message) =>
-        Database.Table<DatabaseData>().DeleteAsync(q => q.Id.Equals(message.Id));
-
-    protected void InsertReplaceMessage(DatabaseData message) => Database.InsertOrReplaceAsync(message);
-
-    protected bool WipeDatabase() => Database.DeleteAllAsync<DatabaseData>().Result is not 0;
-
-    protected Task<int> DeleteMessage(string id) {
-        var row = Database.Table<DatabaseData>().Where(q => q.Id.Equals(id)).FirstOrDefaultAsync().Result;
-        if (row is not null) {
-            row.DeleteFlag = true;
-        }
-        return Database.InsertOrReplaceAsync(row);
-    }
-}

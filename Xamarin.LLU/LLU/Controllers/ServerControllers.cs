@@ -142,7 +142,7 @@ internal class ClientController : ControllerBase, IController {
     public object Connect(object data) {
         var temp = (Secrets) data;
         var client = new ImapClient {
-            ServerCertificateValidationCallback = (s, c, h, e) => true
+            ServerCertificateValidationCallback = (_, _, _, _) => true
         };
         if (!ConnectionController.IsConnectedToInternet) return client;
         try {

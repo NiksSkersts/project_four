@@ -6,6 +6,8 @@
         android:showAsAction = "ifRoom">
         <item
             android:id = "@+id/delete"
-            android:title = "Delete"/>
+            android:title = "@string/Delete"
+            android:textColor="@android:color/white"
+            android:backgroundTint="@android:color/darker_gray"/>
     </item>
 </menu> 

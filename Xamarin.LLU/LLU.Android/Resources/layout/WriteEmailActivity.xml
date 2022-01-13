@@ -12,8 +12,7 @@
             android:id="@+id/WE_Send"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_gravity="right"
-            android:hint="@string/Send" />
+            android:layout_gravity="right" />
     </Toolbar>
 
     <EditText
