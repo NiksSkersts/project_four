@@ -13,7 +13,7 @@ namespace LLU.Android.Models;
 internal class EmailsViewAdapter : RecyclerView.Adapter {
     internal List<DatabaseData> _messages;
     public List<int> selectedPosition = new();
-    
+
     public EmailsViewAdapter(List<DatabaseData> messages) => _messages = messages;
 
     public override int ItemCount => _messages.Count;

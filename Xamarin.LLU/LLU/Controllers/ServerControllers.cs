@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Java.IO;
@@ -53,12 +52,12 @@ internal abstract class ControllerBase {
     ///     On new message event -> switch to true;
     /// </summary>
     internal bool MessagesArrived;
+
     /// <summary>
-    /// 
     /// </summary>
     protected SmtpClient? SmtpClient;
+
     /// <summary>
-    /// 
     /// </summary>
     /// <param name="cancel"></param>
     /// <param name="secrets"></param>
@@ -82,7 +81,6 @@ internal abstract class ControllerBase {
 ///     </para>
 /// </summary>
 internal class ClientController : ControllerBase, IController {
-    
     /// <summary>
     ///     Create an instance of ClientController by providing it with JSON file MailServer and MailPort parameters.
     /// </summary>

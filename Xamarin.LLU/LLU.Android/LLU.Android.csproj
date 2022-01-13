@@ -93,8 +93,8 @@
         <AndroidResource Include="Resources\layout\EmailBodyActivity.xml" />
         <AndroidResource Include="Resources\layout\EmailActivity.axml" />
         <AndroidResource Include="Resources\Menu\EmailActivityMenu.xml">
-          <SubType>Designer</SubType>
-          <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+            <SubType>Designer</SubType>
+            <Generator>MSBuild:UpdateGeneratedFiles</Generator>
         </AndroidResource>
         <AndroidResource Include="Resources\values\strings.xml" />
     </ItemGroup>

@@ -69,13 +69,14 @@ public class EmailActivity : Activity {
         _eaRefresher.Refresh += HandleRefresh;
         CreateNotificationFromIntent(Intent);
     }
+
     protected override void OnPostCreate(Bundle? savedInstanceState) {
         base.OnPostCreate(savedInstanceState);
-        Button showPopupMenu = FindViewById<Button>(Resource.Id.AppBarMenu);
+        var showPopupMenu = FindViewById<Button>(Resource.Id.AppBarMenu);
         showPopupMenu.Gravity = GravityFlags.Right;
-        showPopupMenu.Background = new IconDrawable(this,FontAwesomeIcons.fa_bars.ToString()).WithColor(Color.Red);
+        showPopupMenu.Background = new IconDrawable(this, FontAwesomeIcons.fa_bars.ToString()).WithColor(Color.Red);
         showPopupMenu.Click += (s, arg) => {
-            PopupMenu menu = new PopupMenu(this, showPopupMenu);
+            var menu = new PopupMenu(this, showPopupMenu);
             menu.Inflate(Resource.Menu.EmailActivityMenu);
             menu.MenuItemClick += (sender, args) => {
                 var item = args.Item;
@@ -84,15 +85,16 @@ public class EmailActivity : Activity {
                     foreach (var position in _adapter.selectedPosition) {
                         var list = new List<UniqueId>();
                         list.Add(UniqueId.Parse(_messages[position].UniqueId));
-                        EmailUser.EmailUserData.DeleteMessage(list);
+                        User.EmailUserData.DeleteMessage(list);
                     }
-                    HandleRefresh(this,EventArgs.Empty);
+
+                    HandleRefresh(this, EventArgs.Empty);
                     _adapter.selectedPosition.Clear();
                 }
             };
             menu.Show();
         };
-        
+
         //Initialize adapter
         _adapter = new EmailsViewAdapter(_messages);
         _adapter.ItemClick += OnItemClick;
@@ -110,17 +112,16 @@ public class EmailActivity : Activity {
         layout.AddView(_recyclerView);
         HandleRefresh(this, EventArgs.Empty);
     }
+
     /// <summary>
-    /// <a href="https://www.tutorialspoint.com/xamarin/xamarin_menus.htm">First source</a>
-    /// <a href="https://developer.android.com/guide/topics/resources/menu-resource.html">Second source</a>
+    ///     <a href="https://www.tutorialspoint.com/xamarin/xamarin_menus.htm">First source</a>
+    ///     <a href="https://developer.android.com/guide/topics/resources/menu-resource.html">Second source</a>
     /// </summary>
     private void OnItemLongClick(object sender, int e) {
-        if (_adapter.selectedPosition.Contains(e)) {
+        if (_adapter.selectedPosition.Contains(e))
             _adapter.selectedPosition.Remove(e);
-        }
-        else {
+        else
             _adapter.selectedPosition.Add(e);
-        }
         _adapter.NotifyItemChanged(e);
     }
 
@@ -164,6 +165,7 @@ public class EmailActivity : Activity {
         else
             _drawerLayout.Close();
     }
+
     protected override void OnDestroy() {
         base.OnDestroy();
         //User.EmailUserData?.Dispose();

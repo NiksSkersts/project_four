@@ -91,6 +91,7 @@ internal abstract class User : IDisposable {
 
     public void Dispose() { }
 }
+
 /// <summary>
 ///     Defines the main class that stores and deals with email data.
 ///     <para>It's responsible for an easy access to inbox, messages and creation of SMTP and IMAP clients.</para>
@@ -156,47 +157,49 @@ internal class EmailUser : User {
             var mailFolder = _inbox;
             if (_clientController is not null) {
             securityCheck:
-                var client =  _clientController.Client;
-                if (_clientController.Client is {IsConnected:true,IsAuthenticated:true}) {
+                var client = _clientController.Client;
+                if (_clientController.Client is {IsConnected: true, IsAuthenticated: true}) {
                     if (mailFolder is null) {
                         mailFolder = client.Inbox;
+
 #region toFix
 
-                                        //todo fix events! As of 07.01.2022 they are not working.
-                                        mailFolder.CountChanged += (sender, args) => {
-                                            var folder = (ImapFolder) sender;
-                                            var inboxCount = _messages.Count;
-                                            if (folder.Count <= inboxCount) return;
-                                            var arrivedMessageCount = folder.Count - _messages.Count;
-                                            _clientController!.MessagesArrived = true;
-                                        };
-                                        mailFolder.MessageExpunged += (object sender, MessageEventArgs e) => {
-                                            if (e.Index < _messages.Count)
-                                                _messages.RemoveAt(e.Index);
-                                        };
-                                        mailFolder.MessageFlagsChanged += (sender, args) => {
-                                            foreach (var message in _messages) {
-                                                if (!message.UniqueId.Equals(args.UniqueId.ToString())) continue;
-                                                switch (args.Flags) {
-                                                    case MessageFlags.None:
-                                                        break;
-                                                    case MessageFlags.Seen:
-                                                        message.NewFlag = true;
-                                                        break;
-                                                }
-                                            }
-                                        };
-                                        mailFolder.MessagesVanished += (sender, args) => {
-                                            foreach (var uid in args.UniqueIds) {
-                                                foreach (var message in _messages) {
-                                                    if (!message.UniqueId.Equals(uid.ToString())) continue;
-                                                    var res = _messages.Remove(message);
-                                                }
-                                            }
-                                        };
+                        //todo fix events! As of 07.01.2022 they are not working.
+                        mailFolder.CountChanged += (sender, args) => {
+                            var folder = (ImapFolder) sender;
+                            var inboxCount = _messages.Count;
+                            if (folder.Count <= inboxCount) return;
+                            var arrivedMessageCount = folder.Count - _messages.Count;
+                            _clientController!.MessagesArrived = true;
+                        };
+                        mailFolder.MessageExpunged += (object sender, MessageEventArgs e) => {
+                            if (e.Index < _messages.Count)
+                                _messages.RemoveAt(e.Index);
+                        };
+                        mailFolder.MessageFlagsChanged += (sender, args) => {
+                            foreach (var message in _messages) {
+                                if (!message.UniqueId.Equals(args.UniqueId.ToString())) continue;
+                                switch (args.Flags) {
+                                    case MessageFlags.None:
+                                        break;
+                                    case MessageFlags.Seen:
+                                        message.NewFlag = true;
+                                        break;
+                                }
+                            }
+                        };
+                        mailFolder.MessagesVanished += (sender, args) => {
+                            foreach (var uid in args.UniqueIds) {
+                                foreach (var message in _messages) {
+                                    if (!message.UniqueId.Equals(uid.ToString())) continue;
+                                    var res = _messages.Remove(message);
+                                }
+                            }
+                        };
 
 #endregion
                     }
+
                     if (mailFolder.IsOpen) {
                         if (mailFolder.Access is FolderAccess.None or FolderAccess.ReadOnly) {
                             mailFolder.Close();
@@ -210,7 +213,6 @@ internal class EmailUser : User {
                 else {
                     goto securityCheck;
                 }
-
             }
             else {
                 throw new Exception("_clientController is null!");
@@ -246,7 +248,6 @@ internal class EmailUser : User {
         get {
             if (_clientController is null) return _messages;
             if (IsthereAnyChanges()) {
-                
                 var fetched = FetchMessagesFromServer(0, -1);
                 var fetchedRw = fetched!.ToList();
                 var oldMessages = _messages;
@@ -254,11 +255,11 @@ internal class EmailUser : User {
                 var deletedMessages = new List<DatabaseData>();
 
                 if (fetched is not null) {
-                    
                     foreach (var oldMessage in oldMessages) {
                         var exists = false;
                         foreach (var fetchedMessage in fetched) {
-                            if (oldMessage.Id.Equals(fetchedMessage.Envelope.MessageId) || oldMessage.Id.Equals(fetchedMessage.UniqueId.ToString())) {
+                            if (oldMessage.Id.Equals(fetchedMessage.Envelope.MessageId) ||
+                                oldMessage.Id.Equals(fetchedMessage.UniqueId.ToString())) {
                                 newCollection.Add(oldMessage);
                                 fetchedRw.Remove(fetchedMessage);
                                 exists = true;
@@ -271,11 +272,10 @@ internal class EmailUser : User {
                     }
 
                     foreach (var item in fetchedRw) {
-
                         var message = Inbox.GetMessage(item.UniqueId);
                         var newFlag = true;
                         var hasBeenDeleted = false;
-                        
+
                         if (item.Flags is not (null or MessageFlags.None)) {
                             switch (item.Flags.Value) {
                                 case MessageFlags.Seen:
@@ -288,7 +288,8 @@ internal class EmailUser : User {
                         }
 
                         if (!hasBeenDeleted) {
-                            newCollection.Add(DataController.ConvertFromMime(message, item.UniqueId, item.Folder.Name, newFlag, hasBeenDeleted));
+                            newCollection.Add(DataController.ConvertFromMime(message, item.UniqueId, item.Folder.Name,
+                                newFlag, hasBeenDeleted));
                         }
 
                         RuntimeController.Instance.UpdateDatabase(newCollection);
@@ -296,23 +297,23 @@ internal class EmailUser : User {
                             App.Container.Resolve<INotificationController>()
                                 .SendNotification("New E-mail", message.Subject);
                         }
-                        
                     }
-                    
+
                     foreach (var message in deletedMessages) {
                         RuntimeController.Instance.RemoveMessage(message);
                     }
+
                     _clientController.MessagesArrived = false;
                     _messages = newCollection;
                 }
             }
 
             Inbox?.Close();
-            return _messages.OrderByDescending(q=>q.Time);
+            return _messages.OrderByDescending(q => q.Time);
 
-            
+
             bool IsthereAnyChanges() => Inbox.Count != _messages.Count;
-            
+
             IList<IMessageSummary>? FetchMessagesFromServer(int startIndex, int endIndex) {
                 var fetched = Inbox.Fetch(startIndex, endIndex,
                     MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope | MessageSummaryItems.Flags);
@@ -395,16 +396,15 @@ internal class EmailUser : User {
     internal void DeleteMessage(List<UniqueId> id) {
         var shouldCancel = new CancellationTokenSource();
         try {
-            Inbox.SetFlags(id,MessageFlags.Deleted,silent:true, CancellationToken.None);
+            Inbox.SetFlags(id, MessageFlags.Deleted, silent: true, CancellationToken.None);
             foreach (var ids in id) {
                 try {
-                    _messages.Remove(_messages.Single(q=>q.UniqueId.Equals(ids.ToString())));
+                    _messages.Remove(_messages.Single(q => q.UniqueId.Equals(ids.ToString())));
                 }
                 catch (Exception e) {
                     Console.WriteLine(e);
                     throw;
                 }
-
             }
         }
         catch (Exception e) {

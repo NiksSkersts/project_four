@@ -79,7 +79,8 @@ internal static partial class DataController {
         return dataTemp;
     }
 
-    public static partial MimeMessage? CreateEmail(string receiversString, string sender, string? subject, string? body) {
+    public static partial MimeMessage?
+        CreateEmail(string receiversString, string sender, string? subject, string? body) {
         subject ??= string.Empty;
         body ??= string.Empty;
 

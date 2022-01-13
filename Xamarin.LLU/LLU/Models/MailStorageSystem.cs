@@ -299,8 +299,8 @@ internal abstract class MailStorageSystemBase {
             if (Mail.ContainsKey(mail.Time)) {
                 var data = Mail[mail.Time];
                 if (data.Id.Equals(mail.Id)) res = Mail.Remove(mail.Time);
-                
             }
+
             return res;
         }
 

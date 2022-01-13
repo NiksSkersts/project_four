@@ -45,7 +45,8 @@ public class LoginActivity : Activity {
     private void DoLogin(object sender, EventArgs e) {
         if (_usernameField.Text != null && _passwordField.Text != null) {
             var attempt = _loginAttempt.Login(new UserData {
-                Username = _usernameField.Text, Password = _passwordField.Text
+                Username = _usernameField.Text,
+                Password = _passwordField.Text
             });
             switch (attempt) {
                 case true:

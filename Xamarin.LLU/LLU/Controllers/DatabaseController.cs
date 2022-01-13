@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Kotlin;
 using LLU.Android.Models;
 using LLU.Controllers;
 using LLU.Models;
@@ -70,15 +69,15 @@ public class DatabaseController : IController {
         _ = Database.CreateTableAsync<DatabaseData>().Result;
     }
 
-    protected List<DatabaseData> GetDataFromDatabase() {
-        var tableData = Database.Table<DatabaseData>().ToListAsync().Result;
-        return tableData.Where(q => q.DeleteFlag == false).ToList();
-    }
-
     public object Connect(object data)
         => new SQLiteAsyncConnection((string) data);
 
     public object ClientAuth(UserData temp, object? db) => Database.InsertAsync(temp, typeof(UserData)).Result;
+
+    protected List<DatabaseData> GetDataFromDatabase() {
+        var tableData = Database.Table<DatabaseData>().ToListAsync().Result;
+        return tableData.Where(q => q.DeleteFlag == false).ToList();
+    }
 
     public void Dispose() {
         Database.CloseAsync();
@@ -93,12 +92,11 @@ public class DatabaseController : IController {
 
     protected Task<int> DeleteMessage(string id) {
         var row = Database.Table<DatabaseData>().Where(q => q.Id.Equals(id)).FirstOrDefaultAsync().Result;
-        if (row is not null) {
-            row.DeleteFlag = true;
-        }
+        if (row is not null) row.DeleteFlag = true;
         return Database.InsertOrReplaceAsync(row);
     }
 }
+
 public class RuntimeController : DatabaseController, IDatabase, IDisposable {
     private RuntimeController() {
         RuntimeDatabase.AddMail(GetDataFromDatabase());
@@ -144,6 +142,7 @@ public class RuntimeController : DatabaseController, IDatabase, IDisposable {
         foreach (var item in RuntimeDatabase.ReturnMail()) data.Add(item);
         return data;
     }
+
     [Obsolete]
     public void SyncDatabase() {
         var currentData = Database.Table<DatabaseData>().ToListAsync().Result;
@@ -159,4 +158,3 @@ public class RuntimeController : DatabaseController, IDatabase, IDisposable {
             }
     }
 }
-

@@ -12,7 +12,7 @@ using String = Java.Lang.String;
 
 [assembly: Dependency("NotificationController", LoadHint.Always)]
 
-namespace LLU.Android.Controllers; 
+namespace LLU.Android.Controllers;
 
 /// <summary>
 ///     <a href="https://docs.microsoft.com/en-us/xamarin/xamarin-forms/app-fundamentals/local-notifications">

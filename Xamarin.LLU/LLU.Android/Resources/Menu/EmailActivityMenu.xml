@@ -1,13 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android = "http://schemas.android.com/apk/res/android">
-    <item
-        android:id = "@+id/file_settings"
-        android:title = "Settings"
-        android:showAsAction = "ifRoom">
-        <item
-            android:id = "@+id/delete"
-            android:title = "@string/Delete"
-            android:textColor="@android:color/white"
-            android:backgroundTint="@android:color/darker_gray"/>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/file_settings" android:showAsAction="ifRoom" android:title="Settings">
+        <item android:id="@+id/delete" android:backgroundTint="@android:color/darker_gray" android:textColor="@android:color/white"
+            android:title="@string/Delete" />
     </item>
 </menu> 

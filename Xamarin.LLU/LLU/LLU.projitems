@@ -19,7 +19,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\MailStorageSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\NotificationEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Secrets.cs" />
-    <None Include="$(MSBuildThisFileDirectory)ScratchPad.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)Models\data" />
