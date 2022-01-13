@@ -91,7 +91,6 @@ internal abstract class User : IDisposable {
 
     public void Dispose() { }
 }
-
 /// <summary>
 ///     Defines the main class that stores and deals with email data.
 ///     <para>It's responsible for an easy access to inbox, messages and creation of SMTP and IMAP clients.</para>
@@ -290,14 +289,13 @@ internal class EmailUser : User {
                                     break;
                             }
                         }
-                        
 
-                        newCollection.Add(DataController.ConvertFromMime(message, item.UniqueId, item.Folder.Name, newFlag,
-                            hasBeenDeleted));
-                        
+                        if (!hasBeenDeleted) {
+                            newCollection.Add(DataController.ConvertFromMime(message, item.UniqueId, item.Folder.Name, newFlag, hasBeenDeleted));
+                        }
+
                         RuntimeController.Instance.UpdateDatabase(newCollection);
-                        
-                        if (App.Container is not null && newFlag) {
+                        if (App.Container is not null && newFlag && !hasBeenDeleted) {
                             App.Container.Resolve<INotificationController>()
                                 .SendNotification("New E-mail", message.Subject);
                         }
@@ -315,9 +313,9 @@ internal class EmailUser : User {
             Inbox?.Close();
             return _messages.OrderByDescending(q=>q.Time);
 
-
-
+            
             bool IsthereAnyChanges() => Inbox.Count != _messages.Count;
+            
             IList<IMessageSummary>? FetchMessagesFromServer(int startIndex, int endIndex) {
                 var fetched = Inbox.Fetch(startIndex, endIndex,
                     MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope | MessageSummaryItems.Flags);
@@ -395,6 +393,27 @@ internal class EmailUser : User {
     internal void SetMessageFlags(string uniqueId, MessageFlags flags) {
         var uid = UniqueId.Parse(uniqueId);
         Inbox.SetFlags(uid, flags, true, CancellationToken.None);
+    }
+
+    internal void DeleteMessage(List<UniqueId> id) {
+        var shouldCancel = new CancellationTokenSource();
+        try {
+            Inbox.SetFlags(id,MessageFlags.Deleted,silent:true, CancellationToken.None);
+            foreach (var ids in id) {
+                try {
+                    _messages.Remove(_messages.Single(q=>q.UniqueId.Equals(ids.ToString())));
+                }
+                catch (Exception e) {
+                    Console.WriteLine(e);
+                    throw;
+                }
+
+            }
+        }
+        catch (Exception e) {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     /// <summary>

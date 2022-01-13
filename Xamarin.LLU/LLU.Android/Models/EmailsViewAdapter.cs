@@ -13,7 +13,7 @@ namespace LLU.Android.Models;
 internal class EmailsViewAdapter : RecyclerView.Adapter {
     internal List<DatabaseData> _messages;
     private List<int> Selection = new();
-    int selectedPosition = -1;
+    public int selectedPosition = -1;
     
     public EmailsViewAdapter(List<DatabaseData> messages) => _messages = messages;
 

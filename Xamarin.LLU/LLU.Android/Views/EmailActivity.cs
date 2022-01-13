@@ -6,6 +6,7 @@ using Android.Content;
 using Android.Content.PM;
 using Android.Graphics;
 using Android.OS;
+using Android.Views;
 using Android.Widget;
 using AndroidX.DrawerLayout.Widget;
 using AndroidX.RecyclerView.Widget;
@@ -55,8 +56,7 @@ public class EmailActivity : Activity {
         _eaRefresher = FindViewById<SwipeRefreshLayout>(Resource.Id.EA_Refresher)!;
 
         _hamburgerMenu.Background =
-            new IconDrawable(this, FontAwesomeIcons.fa_bars
-                    .ToString())
+            new IconDrawable(this, FontAwesomeIcons.fa_navicon.ToString())
                 .WithColor(Color.Red)
                 .WithSizePx(50);
         _writeButton.Background =
@@ -71,6 +71,47 @@ public class EmailActivity : Activity {
         _eaRefresher.Refresh += HandleRefresh;
         CreateNotificationFromIntent(Intent);
     }
+    protected override void OnPostCreate(Bundle? savedInstanceState) {
+        base.OnPostCreate(savedInstanceState);
+        Button showPopupMenu = FindViewById<Button>(Resource.Id.AppBarMenu);
+        showPopupMenu.Gravity = GravityFlags.Right;
+        showPopupMenu.Background = new IconDrawable(this,FontAwesomeIcons.fa_bars.ToString());
+        showPopupMenu.Click += (s, arg) => {
+            PopupMenu menu = new PopupMenu(this, showPopupMenu);
+            menu.Inflate(Resource.Menu.EmailActivityMenu);
+            menu.MenuItemClick += (sender, args) => {
+                var item = args.Item;
+                if (item is null) return;
+                if (item.ItemId == Resource.Id.delete) {
+                    var list = new List<UniqueId>();
+                    var position = _adapter.selectedPosition;
+                    list.Add(UniqueId.Parse(_messages[position].UniqueId));
+                    EmailUser.EmailUserData.DeleteMessage(list);
+                    HandleRefresh(this,EventArgs.Empty);
+                    _adapter.selectedPosition = -1;
+                }
+            };
+            menu.Show();
+        };
+        
+        //Initialize adapter
+        _adapter = new EmailsViewAdapter(_messages);
+        _adapter.ItemClick += OnItemClick;
+        _adapter.ItemLongClick += OnItemLongClick;
+
+        //Initialize Recyclerview for listing emails
+        var layout = FindViewById<FrameLayout>(Resource.Id.container);
+        _recyclerView.SetMinimumHeight((int) _displayInfo.Height);
+        _recyclerView.SetMinimumWidth((int) _displayInfo.Width);
+        _recyclerView.SetAdapter(_adapter);
+
+        // Plug in the linear layout manager:
+        _mLayoutManager = new LinearLayoutManager(this);
+        _recyclerView.SetLayoutManager(_mLayoutManager);
+        layout.AddView(_recyclerView);
+        HandleRefresh(this, EventArgs.Empty);
+    }
+
 
     protected override void OnNewIntent(Intent intent) {
         CreateNotificationFromIntent(intent);
@@ -111,31 +152,9 @@ public class EmailActivity : Activity {
         else
             _drawerLayout.Close();
     }
-
-    protected override void OnPostCreate(Bundle? savedInstanceState) {
-        base.OnPostCreate(savedInstanceState);
-
-        //Initialize adapter
-        _adapter = new EmailsViewAdapter(_messages);
-        _adapter.ItemClick += OnItemClick;
-        _adapter.ItemLongClick += OnItemLongClick;
-
-        //Initialize Recyclerview for listing emails
-        var layout = FindViewById<FrameLayout>(Resource.Id.container);
-        _recyclerView.SetMinimumHeight((int) _displayInfo.Height);
-        _recyclerView.SetMinimumWidth((int) _displayInfo.Width);
-        _recyclerView.SetAdapter(_adapter);
-
-        // Plug in the linear layout manager:
-        _mLayoutManager = new LinearLayoutManager(this);
-        _recyclerView.SetLayoutManager(_mLayoutManager);
-        layout.AddView(_recyclerView);
-        HandleRefresh(this, EventArgs.Empty);
-    }
-
     protected override void OnDestroy() {
         base.OnDestroy();
-        User.EmailUserData?.Dispose();
+        //User.EmailUserData?.Dispose();
     }
 
     /// <summary>
@@ -146,6 +165,29 @@ public class EmailActivity : Activity {
     /// </summary>
     /// <exception cref="NotImplementedException">NOT YET IMPLEMENTED.</exception>
     private void OnItemLongClick(object sender, int e) {
+        _adapter.selectedPosition = e;
+        _adapter.NotifyItemChanged(e);
+        
+    }
+
+    public override bool OnCreateOptionsMenu(IMenu menu) {
+        MenuInflater.Inflate(Resource.Menu.EmailActivityMenu,menu);
+        return base.OnCreateOptionsMenu(menu); 
+    }
+
+    public override bool OnOptionsItemSelected(IMenuItem item) {
+        if (item.ItemId == Resource.Id.delete) {
+            var list = new List<UniqueId>();
+            var position = _adapter.selectedPosition;
+            list.Add(UniqueId.Parse(_messages[position].UniqueId));
+            EmailUser.EmailUserData.DeleteMessage(list);
+            _messages.RemoveAt(position);
+            _adapter.NotifyItemRemoved(position);
+            _adapter.selectedPosition = -1;
+            return base.OnOptionsItemSelected(item);
+        }
+
+        return true;
     }
 
     /// <summary>

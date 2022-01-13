@@ -14,6 +14,32 @@ using Console = System.Console;
 
 namespace LLU.Controllers;
 
+internal interface IController {
+    /// <summary>
+    ///     Common function to authenticate user in the server. Takes username and password.
+    ///     Disconnecting just because user inputted wrong credentials is a waste of resources, and can get you banned from the
+    ///     server for a period of time.
+    ///     Keep connection with the server, but try auth again instead.
+    ///     <para>WARNING: Client should be connected before calling this function!</para>
+    /// </summary>
+    /// <param name="userData">Consists of Username and Password fields.</param>
+    /// <param name="userData.Username">
+    ///     Username would normally be written like "example@gmail.com", but LLU uses only the part before
+    ///     @.
+    /// </param>
+    /// <param name="userData.Password">Password....</param>
+    /// <param name="client"></param>
+    /// <returns></returns>
+    object ClientAuth(UserData userData, object client);
+
+    /// <summary>
+    ///     Common function to create a connection with the server.
+    ///     <param name="data"> Client object. Either IMAP or SMTP.</param>
+    ///     <returns>Returns a created client object that has been connected with the server.</returns>
+    /// </summary>
+    object Connect(object data);
+}
+
 /// <summary>
 ///     Provides the base for SMTP and IMAP controllers
 /// </summary>
@@ -27,9 +53,16 @@ internal abstract class ControllerBase {
     ///     On new message event -> switch to true;
     /// </summary>
     internal bool MessagesArrived;
-
+    /// <summary>
+    /// 
+    /// </summary>
     protected SmtpClient? SmtpClient;
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="cancel"></param>
+    /// <param name="secrets"></param>
+    /// <param name="userData"></param>
     protected ControllerBase(CancellationTokenSource cancel, Secrets secrets, UserData userData) {
         Cancel = cancel;
         Secrets = secrets;
@@ -40,8 +73,7 @@ internal abstract class ControllerBase {
 /// <summary>
 ///     <para>
 ///         LLU has some kind of security in place that blocks too many attempted Connect() requests - from this app and
-///         other
-///         third party apps like thunderbird.
+///         other third party apps like thunderbird.
 ///         As far as I am aware, the suggestion is to disconnect or go IDLE on app exit or pause.
 ///     </para>
 ///     <para>
@@ -50,6 +82,7 @@ internal abstract class ControllerBase {
 ///     </para>
 /// </summary>
 internal class ClientController : ControllerBase, IController {
+    
     /// <summary>
     ///     Create an instance of ClientController by providing it with JSON file MailServer and MailPort parameters.
     /// </summary>
@@ -138,18 +171,6 @@ internal class ClientController : ControllerBase, IController {
 
     public void Dispose() {
         Client.Dispose();
-    }
-
-    public bool DeleteMessages(ImapClient client, List<string> Ids) {
-        try {
-            foreach (var id in Ids)
-                client.Inbox.AddFlagsAsync(UniqueId.Parse(id), MessageFlags.Deleted, true, Cancel.Token);
-        }
-        catch (Exception) {
-            return false;
-        }
-
-        return true;
     }
 }
 

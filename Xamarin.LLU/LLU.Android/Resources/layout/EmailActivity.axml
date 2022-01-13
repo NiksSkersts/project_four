@@ -23,6 +23,10 @@
                 android:id="@+id/WriteEmailButton"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent" />
+            <Button
+                android:id="@+id/AppBarMenu"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
         </Toolbar>
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
